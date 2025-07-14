@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Processing Service</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>File Processing Service</h1>
+
+    <div class="info">
+        <h3>Information:</h3>
+        <p>Upload a file and choose processing parameters. Supported formats: TXT, CSV, JSON</p>
+    </div>
+
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Choose file:</label>
+            <input type="file" id="file" name="file" required accept=".gcode">
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="operation">Operation type:</label>
+            <select id="operation" name="operation" required>
+                <option value="">Select operation...</option>
+                <option value="uppercase">Convert to uppercase</option>
+                <option value="lowercase">Convert to lowercase</option>
+                <option value="word_count">Word count</option>
+                <option value="line_count">Line count</option>
+                <option value="reverse">Reverse text</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="format">Output file format:</label>
+            <select id="format" name="format" required>
+                <option value="txt">TXT</option>
+                <option value="json">JSON</option>
+                <option value="csv">CSV</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="options">Additional options:</label>
+            <textarea id="options" name="options" placeholder="Enter additional parameters (optional)" rows="3"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" id="submitBtn">
+                <span class="btn-text">Process & Download</span>
+                <span class="loading" id="loading" style="display: none;">Processing...</span>
+            </button>
+        </div>
+    </form>
+
+    <div class="upload-area" id="uploadArea">
+        <p>Drag and drop files here or click to select</p>
+    </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
