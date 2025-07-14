@@ -3,50 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Processing Service</title>
+    <title>Continuous loop 3D printing</title>
     <link rel="stylesheet" href="/www/style.css">
 </head>
 <body>
 <div class="container">
-    <h1>File Processing Service</h1>
+    <h1>Continuous loop 3D printing</h1>
 
     <div class="info">
         <h3>Information:</h3>
-        <p>Upload a file and choose processing parameters. Supported formats: TXT, CSV, JSON</p>
+        <p>Upload a gcode file and choose processing parameters.</p>
     </div>
 
+
     <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="file">Choose file:</label>
-            <input type="file" id="file" name="file" required accept=".gcode">
-            <div class="file-info" id="fileInfo"></div>
+        <div class="upload-area" id="uploadArea">
+            <p>Drag and drop files here or click to select</p>
+            <div class="form-group">
+                <input type="file" id="file" name="file" required accept=".gcode">
+                <div class="file-info" id="fileInfo"></div>
+            </div>
         </div>
 
         <div class="form-group">
-            <label for="operation">Operation type:</label>
-            <select id="operation" name="operation" required>
-                <option value="">Select operation...</option>
-                <option value="uppercase">Convert to uppercase</option>
-                <option value="lowercase">Convert to lowercase</option>
-                <option value="word_count">Word count</option>
-                <option value="line_count">Line count</option>
-                <option value="reverse">Reverse text</option>
-            </select>
+            <label for="iterations">Iteration number:</label>
+            <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
+            <div class="file-info" id="iterationsInfo">Number of iterations for processing</div>
         </div>
 
         <div class="form-group">
-            <label for="format">Output file format:</label>
-            <select id="format" name="format" required>
-                <option value="txt">TXT</option>
-                <option value="json">JSON</option>
-                <option value="csv">CSV</option>
-            </select>
+            <label for="wait_temp">Wait bed temperature cool down:</label>
+            <input type="number" id="wait_temp" name="wait_temp" min="20" max="80" value="40" required>
         </div>
 
         <div class="form-group">
-            <label for="options">Additional options:</label>
-            <textarea id="options" name="options" placeholder="Enter additional parameters (optional)" rows="3"></textarea>
+            <label for="wait_min">Wait additional minutes:</label>
+            <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
         </div>
+
+<!--        <div class="form-group">-->
+<!--            <label for="operation">Operation type:</label>-->
+<!--            <select id="operation" name="operation" required>-->
+<!--                <option value="">Select operation...</option>-->
+<!--                <option value="uppercase">Convert to uppercase</option>-->
+<!--                <option value="lowercase">Convert to lowercase</option>-->
+<!--                <option value="word_count">Word count</option>-->
+<!--                <option value="line_count">Line count</option>-->
+<!--                <option value="reverse">Reverse text</option>-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        <div class="form-group">-->
+<!--            <label for="format">Output file format:</label>-->
+<!--            <select id="format" name="format" required>-->
+<!--                <option value="txt">TXT</option>-->
+<!--                <option value="json">JSON</option>-->
+<!--                <option value="csv">CSV</option>-->
+<!--            </select>-->
+<!--        </div>-->
+
+<!--        <div class="form-group">-->
+<!--            <label for="options">Additional options:</label>-->
+<!--            <textarea id="options" name="options" placeholder="Enter additional parameters (optional)" rows="3"></textarea>-->
+<!--        </div>-->
 
         <div class="form-actions">
             <button type="submit" id="submitBtn">
@@ -56,9 +75,6 @@
         </div>
     </form>
 
-    <div class="upload-area" id="uploadArea">
-        <p>Drag and drop files here or click to select</p>
-    </div>
 </div>
 
 <script src="/www/script.js"></script>

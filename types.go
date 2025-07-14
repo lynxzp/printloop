@@ -4,11 +4,11 @@ import "time"
 
 // ProcessingRequest represents a file processing request
 type ProcessingRequest struct {
-	InputFile string // Path to input file
-	Operation string // Type of operation (uppercase, lowercase, word_count, etc.)
-	Format    string // Output file format (txt, json, csv)
-	Options   string // Additional options
-	Timestamp int64  // Timestamp for uniqueness
+	InputFile  string // Path to input file
+	Iterations int64
+	WaitTemp   int64
+	WaitMin    int64
+	Timestamp  int64
 }
 
 // ProcessingResult represents the result of file processing

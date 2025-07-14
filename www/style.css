@@ -49,29 +49,106 @@ h1 {
 /* Form Styles */
 .form-group {
     margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: nowrap;
 }
 
 label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     font-weight: 600;
     color: #2c3e50;
     font-size: 1rem;
+    min-width: 150px;
+    flex-shrink: 0;
 }
 
 input[type="file"],
+input[type="number"],
 select,
 textarea {
-    width: 100%;
+    flex: 1;
     padding: 12px 15px;
     border: 2px solid #e9ecef;
     border-radius: 8px;
     font-size: 1rem;
     transition: all 0.3s ease;
     background: white;
+    font-family: inherit;
+}
+
+/* Enhanced Number Input Styling */
+input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"]::-moz-number-spinner {
+    appearance: none;
+}
+
+/* Custom number input with better UX */
+.number-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.number-input-wrapper input[type="number"] {
+    width: 100%;
+    padding-right: 45px;
+}
+
+.number-controls {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.number-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 18px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    user-select: none;
+}
+
+.number-btn:first-child {
+    border-radius: 3px 3px 0 0;
+}
+
+.number-btn:last-child {
+    border-radius: 0 0 3px 3px;
+}
+
+.number-btn:hover {
+    background: #5a6fd8;
+}
+
+.number-btn:active {
+    background: #4c63d2;
 }
 
 input[type="file"]:focus,
+input[type="number"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
@@ -91,6 +168,7 @@ textarea {
 /* File Info */
 .file-info {
     margin-top: 10px;
+    margin-left: 165px; /* Align with input fields */
     padding: 10px;
     background: #f8f9fa;
     border-radius: 5px;
@@ -230,6 +308,24 @@ button:disabled {
 
     h1 {
         font-size: 2rem;
+    }
+
+    /* Keep one-line layout on tablets, stack only on very small screens */
+    @media (max-width: 600px) {
+        .form-group {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        label {
+            min-width: auto;
+            margin-bottom: 5px;
+        }
+
+        .file-info {
+            margin-left: 0;
+        }
     }
 
     button {

@@ -41,11 +41,6 @@ function handleFormSubmit(event) {
     const loading = document.getElementById('loading');
     const btnText = document.querySelector('.btn-text');
 
-    // Validate form first
-    if (!validateForm()) {
-        return false;
-    }
-
     if (submitBtn && loading && btnText) {
         // Show loading state
         submitBtn.disabled = true;
@@ -132,58 +127,16 @@ function resetForm() {
     }
 }
 
-function validateForm() {
-    const fileInput = document.getElementById('file');
-    const operation = document.getElementById('operation');
-    const format = document.getElementById('format');
-
-    if (!fileInput.files.length) {
-        showError('Please select a file');
-        return false;
-    }
-
-    if (!operation.value) {
-        showError('Please select an operation');
-        return false;
-    }
-
-    if (!format.value) {
-        showError('Please select output format');
-        return false;
-    }
-
-    // Validate file type
-    const file = fileInput.files[0];
-    const allowedTypes = ['.gcode'];
-    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-
-    if (!allowedTypes.includes(fileExtension)) {
-        showError('Please select a valid gcode file');
-        return false;
-    }
-
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-        showError('File size must be less than 10MB');
-        return false;
-    }
-
-    return true;
-}
-
 function handleFileSelect(event) {
     const file = event.target.files[0];
     const fileInfo = document.getElementById('fileInfo');
 
     if (file && fileInfo) {
         const size = formatFileSize(file.size);
-        const type = file.type || 'Unknown';
 
         fileInfo.innerHTML = `
             <strong>Selected file:</strong> ${file.name}<br>
-            <strong>Size:</strong> ${size}<br>
-            <strong>Type:</strong> ${type}
+            <strong>Size:</strong> ${size}
         `;
         fileInfo.style.display = 'block';
         fileInfo.classList.add('fade-in');

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -12,20 +12,6 @@ import (
 	"strings"
 	"time"
 )
-
-// getContentType returns the appropriate MIME type for the file format
-func getContentType(format string) string {
-	switch format {
-	case "json":
-		return "application/json"
-	case "csv":
-		return "text/csv"
-	case "txt":
-		return "text/plain"
-	default:
-		return "application/octet-stream"
-	}
-}
 
 // HomeHandler serves the main page with form
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +23,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// Read HTML file
 	htmlContent, err := os.ReadFile("www/index.html")
 	if err != nil {
-		log.Printf("Error reading HTML file: %v", err)
+		slog.Error("Error reading index.html:", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -48,6 +34,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 // UploadHandler handles file upload and processing
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	log := slog.With("handler", "UploadHandler")
+	log.Info("Received upload request", "remote_addr", r.RemoteAddr)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -68,13 +56,27 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Get form parameters
-	operation := r.FormValue("operation")
-	format := r.FormValue("format")
-	options := r.FormValue("options")
+	log.Info("Uploaded File", "filename", header.Filename)
 
-	if operation == "" || format == "" {
-		http.Error(w, "Operation and format are required", http.StatusBadRequest)
+	iterationsS := r.FormValue("iterations")
+	iterations, err := strconv.ParseInt(iterationsS, 10, 64)
+	if err != nil || iterations <= 0 {
+		log.Error("Invalid iterations value: ", err)
+		http.Error(w, "Invalid iterations value: "+iterationsS, http.StatusBadRequest)
+		return
+	}
+	waitTempS := r.FormValue("wait_temp")
+	waitTemp, err := strconv.ParseInt(waitTempS, 10, 64)
+	if err != nil || waitTemp < 0 {
+		log.Error("Invalid wait_temp value", "error", err, "wait_temp raw", waitTempS)
+		http.Error(w, "Invalid wait_temp value: "+waitTempS, http.StatusBadRequest)
+		return
+	}
+	waitMinS := r.FormValue("wait_min")
+	waitMin, err := strconv.ParseInt(waitMinS, 10, 64)
+	if err != nil || waitMin < 0 {
+		log.Error("Invalid wait_sec value", "error", err, "wait_min raw", waitMinS)
+		http.Error(w, "Invalid wait_sec value: "+waitMinS, http.StatusBadRequest)
 		return
 	}
 
@@ -86,7 +88,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Save uploaded file
 	dst, err := os.Create(filepath)
 	if err != nil {
-		http.Error(w, "File creation error: "+err.Error(), http.StatusInternalServerError)
+		log.Error("File creation failed: ", "error", err)
+		http.Error(w, "File creation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
@@ -95,7 +98,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Clean up partially created file on error
 		if removeErr := os.Remove(filepath); removeErr != nil {
-			log.Printf("Warning: Failed to remove partially created file %s: %v", filepath, removeErr)
+			log.Info("Warning: Failed to remove partially created file", "filename", filepath, "err", removeErr)
 		}
 		http.Error(w, "File saving error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -103,46 +106,44 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create processing request
 	request := ProcessingRequest{
-		InputFile: filepath,
-		Operation: operation,
-		Format:    format,
-		Options:   options,
-		Timestamp: timestamp,
+		InputFile:  filepath,
+		Iterations: iterations,
+		WaitTemp:   waitTemp,
+		WaitMin:    waitMin,
+		Timestamp:  timestamp,
 	}
 
 	// Process file (ProcessFile will handle cleanup of input file)
 	result, err := ProcessFile(request)
 	if err != nil {
-		log.Printf("File processing error: %v", err)
+		log.Error("File processing failed", "error", err)
 		// If ProcessFile failed, it should have cleaned up the input file already
 		// But let's make sure in case the error occurred before cleanup
 		if _, statErr := os.Stat(filepath); statErr == nil {
 			if removeErr := os.Remove(filepath); removeErr != nil {
-				log.Printf("Warning: Failed to remove input file after processing error %s: %v", filepath, removeErr)
+				slog.Warn("Warning: Failed to remove input file after processing error", "filepath", filepath, "err", removeErr)
 			}
 		}
-		http.Error(w, "File processing error: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Set headers for immediate download
-	downloadFilename := fmt.Sprintf("processed_%s_%s.%s",
-		operation,
-		strings.TrimSuffix(header.Filename, path.Ext(header.Filename)),
-		format)
+	downloadFilename := fmt.Sprintf("processed_%s.gcode",
+		strings.TrimSuffix(header.Filename, path.Ext(header.Filename)))
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", downloadFilename))
-	w.Header().Set("Content-Type", getContentType(format))
+	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Length", strconv.Itoa(len(result.Data)))
 
 	// Write processed data directly to response
 	_, err = w.Write(result.Data)
 	if err != nil {
-		log.Printf("Error writing response: %v", err)
+		slog.Error("Failed writing response", "error", err)
 		return
 	}
 
-	log.Printf("File processed and downloaded: %s -> %s", header.Filename, downloadFilename)
+	slog.Info("File processed and downloaded", "filename", header.Filename, "downloadFilename", downloadFilename)
 	// Note: No result file cleanup needed here since data is streamed directly to response
 }
 
@@ -191,15 +192,14 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Copy file to response
 	_, err = io.Copy(w, file)
 	if err != nil {
-		log.Printf("File transfer error: %v", err)
+		slog.Error("File transfer failed", "error", err)
 		return
 	}
 
-	// Clean up result file after successful download
-	file.Close() // Explicitly close before removing
+	file.Close()
 	if err := os.Remove(filepath); err != nil {
-		log.Printf("Warning: Failed to remove result file %s after download: %v", filepath, err)
+		slog.Warn("Warning: Failed to remove result file %s after download", "filepath", filepath, "error", err)
 	} else {
-		log.Printf("Successfully removed result file after download: %s", filepath)
+		slog.Info("Successfully removed result file after download", "filepath", filepath)
 	}
 }
