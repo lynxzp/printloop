@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -15,18 +16,30 @@ func ProcessFile(request ProcessingRequest) (*ProcessingResult, error) {
 	// Read input file
 	content, err := os.ReadFile(request.InputFile)
 	if err != nil {
+		// Clean up input file even on error
+		if removeErr := os.Remove(request.InputFile); removeErr != nil {
+			log.Printf("Warning: Failed to remove input file %s: %v", request.InputFile, removeErr)
+		}
 		return nil, fmt.Errorf("file reading error: %w", err)
 	}
 
 	// Perform operation
 	processedData, stats, err := performOperation(string(content), request.Operation)
 	if err != nil {
+		// Clean up input file on operation error
+		if removeErr := os.Remove(request.InputFile); removeErr != nil {
+			log.Printf("Warning: Failed to remove input file %s: %v", request.InputFile, removeErr)
+		}
 		return nil, fmt.Errorf("operation execution error: %w", err)
 	}
 
 	// Format output
 	formattedData, err := formatOutput(processedData, stats, request.Format, request.Operation)
 	if err != nil {
+		// Clean up input file on formatting error
+		if removeErr := os.Remove(request.InputFile); removeErr != nil {
+			log.Printf("Warning: Failed to remove input file %s: %v", request.InputFile, removeErr)
+		}
 		return nil, fmt.Errorf("formatting error: %w", err)
 	}
 
@@ -41,8 +54,13 @@ func ProcessFile(request ProcessingRequest) (*ProcessingResult, error) {
 		Error:       nil,
 	}
 
-	// Clean up input file
-	os.Remove(request.InputFile)
+	// Clean up input file after successful processing
+	if err := os.Remove(request.InputFile); err != nil {
+		log.Printf("Warning: Failed to remove input file %s: %v", request.InputFile, err)
+		// Don't return error, as processing was successful
+	} else {
+		log.Printf("Successfully removed input file: %s", request.InputFile)
+	}
 
 	return result, nil
 }

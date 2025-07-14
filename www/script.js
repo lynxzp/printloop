@@ -154,11 +154,11 @@ function validateForm() {
 
     // Validate file type
     const file = fileInput.files[0];
-    const allowedTypes = ['.txt', '.csv', '.json'];
+    const allowedTypes = ['.gcode'];
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
 
     if (!allowedTypes.includes(fileExtension)) {
-        showError('Please select a valid file type (TXT, CSV, JSON)');
+        showError('Please select a valid gcode file');
         return false;
     }
 

@@ -93,6 +93,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = io.Copy(dst, file)
 	if err != nil {
+		// Clean up partially created file on error
+		if removeErr := os.Remove(filepath); removeErr != nil {
+			log.Printf("Warning: Failed to remove partially created file %s: %v", filepath, removeErr)
+		}
 		http.Error(w, "File saving error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -106,10 +110,17 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		Timestamp: timestamp,
 	}
 
-	// Process file
+	// Process file (ProcessFile will handle cleanup of input file)
 	result, err := ProcessFile(request)
 	if err != nil {
 		log.Printf("File processing error: %v", err)
+		// If ProcessFile failed, it should have cleaned up the input file already
+		// But let's make sure in case the error occurred before cleanup
+		if _, statErr := os.Stat(filepath); statErr == nil {
+			if removeErr := os.Remove(filepath); removeErr != nil {
+				log.Printf("Warning: Failed to remove input file after processing error %s: %v", filepath, removeErr)
+			}
+		}
 		http.Error(w, "File processing error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -132,9 +143,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("File processed and downloaded: %s -> %s", header.Filename, downloadFilename)
+	// Note: No result file cleanup needed here since data is streamed directly to response
 }
 
-// DownloadHandler serves the result file for download
+// DownloadHandler serves the result file for download and cleans up after serving
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -180,5 +192,14 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, file)
 	if err != nil {
 		log.Printf("File transfer error: %v", err)
+		return
+	}
+
+	// Clean up result file after successful download
+	file.Close() // Explicitly close before removing
+	if err := os.Remove(filepath); err != nil {
+		log.Printf("Warning: Failed to remove result file %s after download: %v", filepath, err)
+	} else {
+		log.Printf("Successfully removed result file after download: %s", filepath)
 	}
 }
