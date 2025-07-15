@@ -32,23 +32,53 @@ function initializeApp() {
     if (container) {
         container.classList.add('fade-in');
     }
+
+    // Add input validation and formatting
+    setupInputValidation();
+}
+
+function setupInputValidation() {
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+
+    numberInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            const min = parseInt(this.min);
+            const max = parseInt(this.max);
+
+            if (value < min) this.value = min;
+            if (value > max) this.value = max;
+
+            // Add visual feedback for valid values
+            if (value >= min && value <= max) {
+                this.style.borderColor = '#00b894';
+                this.style.boxShadow = '0 0 0 3px rgba(0, 184, 148, 0.1)';
+            } else {
+                this.style.borderColor = '#e74c3c';
+                this.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.1)';
+            }
+        });
+
+        input.addEventListener('blur', function() {
+            this.style.borderColor = '#e9ecef';
+            this.style.boxShadow = 'none';
+        });
+    });
 }
 
 function handleFormSubmit(event) {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
 
     const submitBtn = document.getElementById('submitBtn');
     const loading = document.getElementById('loading');
     const btnText = document.querySelector('.btn-text');
 
     if (submitBtn && loading && btnText) {
-        // Show loading state
         submitBtn.disabled = true;
         btnText.style.display = 'none';
         loading.style.display = 'inline-block';
     }
 
-    // Submit form using FormData and fetch for better control
     const form = document.getElementById('uploadForm');
     const formData = new FormData(form);
 
@@ -61,7 +91,6 @@ function handleFormSubmit(event) {
                 throw new Error(`Server error: ${response.status}`);
             }
 
-            // Get filename from Content-Disposition header if available
             const disposition = response.headers.get('Content-Disposition');
             let filename = 'processed_file';
             if (disposition) {
@@ -71,11 +100,9 @@ function handleFormSubmit(event) {
                 }
             }
 
-            // Convert response to blob and trigger download
             return response.blob().then(blob => ({ blob, filename }));
         })
         .then(({ blob, filename }) => {
-            // Create download link and trigger it
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -83,18 +110,16 @@ function handleFormSubmit(event) {
             document.body.appendChild(a);
             a.click();
 
-            // Cleanup
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            // Show success message
-            showSuccess('File processed and downloaded successfully!');
+            showSuccess('🎉 File processed and downloaded successfully!');
             resetSubmitButton();
             resetForm();
         })
         .catch(error => {
             console.error('Upload error:', error);
-            showError('Error processing file: ' + error.message);
+            showError('❌ Error processing file: ' + error.message);
             resetSubmitButton();
         });
 
@@ -106,24 +131,15 @@ function resetForm() {
     const fileInfo = document.getElementById('fileInfo');
 
     if (form) {
-        form.reset();
+        // Reset only file input, keep parameter values
+        const fileInput = document.getElementById('file');
+        if (fileInput) {
+            fileInput.value = '';
+        }
     }
 
     if (fileInfo) {
         fileInfo.style.display = 'none';
-    }
-
-    // Clear saved form data except for operation and format preferences
-    const savedData = localStorage.getItem('fileProcessorFormData');
-    if (savedData) {
-        try {
-            const formData = JSON.parse(savedData);
-            // Keep operation and format, but clear options
-            formData.options = '';
-            localStorage.setItem('fileProcessorFormData', JSON.stringify(formData));
-        } catch (e) {
-            localStorage.removeItem('fileProcessorFormData');
-        }
     }
 }
 
@@ -144,13 +160,11 @@ function handleFileSelect(event) {
 }
 
 function setupDragAndDrop(uploadArea, fileInput) {
-    // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         uploadArea.addEventListener(eventName, preventDefaults, false);
         document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    // Highlight drop area when item is dragged over it
     ['dragenter', 'dragover'].forEach(eventName => {
         uploadArea.addEventListener(eventName, highlight, false);
     });
@@ -159,12 +173,12 @@ function setupDragAndDrop(uploadArea, fileInput) {
         uploadArea.addEventListener(eventName, unhighlight, false);
     });
 
-    // Handle dropped files
     uploadArea.addEventListener('drop', handleDrop, false);
 
-    // Click to select file
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
+    uploadArea.addEventListener('click', (e) => {
+        if (e.target.type !== 'file' && e.target.tagName !== 'BUTTON') {
+            fileInput.click();
+        }
     });
 
     function preventDefaults(e) {
@@ -202,34 +216,22 @@ function formatFileSize(bytes) {
 }
 
 function showError(message) {
-    // Create error notification
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-notification';
+    errorDiv.className = 'error-notification fade-in';
     errorDiv.innerHTML = `
         <strong>Error:</strong> ${message}
-        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer;">&times;</button>
+        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 0; margin-left: 15px;">&times;</button>
     `;
 
-    // Add error styles
-    errorDiv.style.cssText = `
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-        color: white;
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-        animation: fadeIn 0.3s ease-out;
-    `;
-
-    // Insert at top of container
     const container = document.querySelector('.container');
     const firstChild = container.firstElementChild;
     container.insertBefore(errorDiv, firstChild);
 
-    // Auto remove after 5 seconds
     setTimeout(() => {
         if (errorDiv.parentElement) {
-            errorDiv.remove();
+            errorDiv.style.opacity = '0';
+            errorDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => errorDiv.remove(), 300);
         }
     }, 5000);
 }
@@ -246,23 +248,12 @@ function resetSubmitButton() {
     }
 }
 
-// Utility function to show success messages
 function showSuccess(message) {
     const successDiv = document.createElement('div');
-    successDiv.className = 'success-notification';
+    successDiv.className = 'success-notification fade-in';
     successDiv.innerHTML = `
         <strong>Success:</strong> ${message}
-        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer;">&times;</button>
-    `;
-
-    successDiv.style.cssText = `
-        background: linear-gradient(135deg, #00b894, #00a085);
-        color: white;
-        padding: 15px;
-        margin-bottom: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
-        animation: fadeIn 0.3s ease-out;
+        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 0; margin-left: 15px;">&times;</button>
     `;
 
     const container = document.querySelector('.container');
@@ -271,14 +262,15 @@ function showSuccess(message) {
 
     setTimeout(() => {
         if (successDiv.parentElement) {
-            successDiv.remove();
+            successDiv.style.opacity = '0';
+            successDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => successDiv.remove(), 300);
         }
     }, 5000);
 }
 
-// Add keyboard shortcuts
+// Enhanced keyboard shortcuts
 document.addEventListener('keydown', function(event) {
-    // Ctrl/Cmd + Enter to submit form
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         const form = document.getElementById('uploadForm');
         if (form) {
@@ -286,76 +278,24 @@ document.addEventListener('keydown', function(event) {
         }
     }
 
-    // Escape to clear file selection
     if (event.key === 'Escape') {
         const fileInput = document.getElementById('file');
         const fileInfo = document.getElementById('fileInfo');
+        const uploadIcon = document.querySelector('.upload-icon');
 
         if (fileInput && fileInfo) {
             fileInput.value = '';
             fileInfo.style.display = 'none';
+
+            if (uploadIcon) {
+                uploadIcon.textContent = '📁';
+                uploadIcon.style.color = '#667eea';
+            }
         }
     }
 });
 
-// Progress enhancement for file upload (if needed in future)
-function createProgressBar() {
-    const progressContainer = document.createElement('div');
-    progressContainer.innerHTML = `
-        <div style="background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0;">
-            <div id="progressBar" style="height: 20px; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: width 0.3s ease;"></div>
-        </div>
-        <div style="text-align: center; font-size: 0.9rem; color: #6c757d;">
-            <span id="progressText">Preparing upload...</span>
-        </div>
-    `;
-
-    return progressContainer;
+// Add smooth scrolling for mobile
+if ('scrollBehavior' in document.documentElement.style) {
+    document.documentElement.style.scrollBehavior = 'smooth';
 }
-
-// Form auto-save to localStorage (for development convenience)
-function saveFormData() {
-    const form = document.getElementById('uploadForm');
-    if (!form) return;
-
-    const formData = {
-        operation: document.getElementById('operation').value,
-        format: document.getElementById('format').value,
-        options: document.getElementById('options').value
-    };
-
-    localStorage.setItem('fileProcessorFormData', JSON.stringify(formData));
-}
-
-function loadFormData() {
-    const savedData = localStorage.getItem('fileProcessorFormData');
-    if (!savedData) return;
-
-    try {
-        const formData = JSON.parse(savedData);
-
-        if (formData.operation) {
-            document.getElementById('operation').value = formData.operation;
-        }
-        if (formData.format) {
-            document.getElementById('format').value = formData.format;
-        }
-        if (formData.options) {
-            document.getElementById('options').value = formData.options;
-        }
-    } catch (e) {
-        console.warn('Failed to load saved form data:', e);
-    }
-}
-
-// Save form data on change
-document.addEventListener('change', function(event) {
-    if (event.target.matches('#operation, #format, #options')) {
-        saveFormData();
-    }
-});
-
-// Load saved form data on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadFormData();
-});

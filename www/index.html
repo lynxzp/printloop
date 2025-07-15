@@ -11,61 +11,50 @@
     <h1>Continuous loop 3D printing</h1>
 
     <div class="info">
-        <h3>Information:</h3>
-        <p>Upload a gcode file and choose processing parameters.</p>
-    </div>
 
+        <p><b>Information:</b> upload a G-code file and configure processing parameters for continuous loop 3D printing.</p>
+    </div>
 
     <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
         <div class="upload-area" id="uploadArea">
-            <p>Drag and drop files here or click to select</p>
-            <div class="form-group">
+            <div class="upload-content">
+                <p>Drag and drop G-code files here</p>
+                <p class="upload-subtext">or click to browse files</p>
+                <button type="button" class="browse-button" onclick="document.getElementById('file').click()">
+                    Choose File
+                </button>
                 <input type="file" id="file" name="file" required accept=".gcode">
                 <div class="file-info" id="fileInfo"></div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="iterations">Iteration number:</label>
-            <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
-            <div class="file-info" id="iterationsInfo">Number of iterations for processing</div>
+        <div class="form-section">
+            <h3 class="section-title">Processing Parameters</h3>
+
+            <div class="form-group">
+                <label for="iterations">
+                    Iteration number:
+                </label>
+                <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
+                <span class="input-unit">cycles</span>
+            </div>
+
+            <div class="form-group">
+                <label for="wait_temp">
+                    Wait bed temperature:
+                </label>
+                <input type="number" id="wait_temp" name="wait_temp" min="20" max="80" value="40" required>
+                <span class="input-unit">°C</span>
+            </div>
+
+            <div class="form-group">
+                <label for="wait_min">
+                    Additional wait time:
+                </label>
+                <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
+                <span class="input-unit">minutes</span>
+            </div>
         </div>
-
-        <div class="form-group">
-            <label for="wait_temp">Wait bed temperature cool down:</label>
-            <input type="number" id="wait_temp" name="wait_temp" min="20" max="80" value="40" required>
-        </div>
-
-        <div class="form-group">
-            <label for="wait_min">Wait additional minutes:</label>
-            <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
-        </div>
-
-<!--        <div class="form-group">-->
-<!--            <label for="operation">Operation type:</label>-->
-<!--            <select id="operation" name="operation" required>-->
-<!--                <option value="">Select operation...</option>-->
-<!--                <option value="uppercase">Convert to uppercase</option>-->
-<!--                <option value="lowercase">Convert to lowercase</option>-->
-<!--                <option value="word_count">Word count</option>-->
-<!--                <option value="line_count">Line count</option>-->
-<!--                <option value="reverse">Reverse text</option>-->
-<!--            </select>-->
-<!--        </div>-->
-
-<!--        <div class="form-group">-->
-<!--            <label for="format">Output file format:</label>-->
-<!--            <select id="format" name="format" required>-->
-<!--                <option value="txt">TXT</option>-->
-<!--                <option value="json">JSON</option>-->
-<!--                <option value="csv">CSV</option>-->
-<!--            </select>-->
-<!--        </div>-->
-
-<!--        <div class="form-group">-->
-<!--            <label for="options">Additional options:</label>-->
-<!--            <textarea id="options" name="options" placeholder="Enter additional parameters (optional)" rows="3"></textarea>-->
-<!--        </div>-->
 
         <div class="form-actions">
             <button type="submit" id="submitBtn">
@@ -74,7 +63,6 @@
             </button>
         </div>
     </form>
-
 </div>
 
 <script src="/www/script.js"></script>
