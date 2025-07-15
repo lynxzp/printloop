@@ -20,7 +20,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// Read HTML file
 	htmlContent, err := os.ReadFile("www/index.html")
 	if err != nil {
-		slog.Error("Error reading index.html:", err)
+		slog.Error("Error reading index.html:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -39,11 +39,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	inFileName := path.Join("uploads", req.FileName)
+	outFileName := path.Join("results", req.FileName)
 
-	defer os.Remove(path.Join("uploads", req.FileName))
-	defer os.Remove(path.Join("results", req.FileName))
+	defer os.Remove(inFileName)
+	defer os.Remove(outFileName)
 
-	err = ProcessFile(req)
+	err = ProcessFile(inFileName, outFileName, req)
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
 		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
