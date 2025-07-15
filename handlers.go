@@ -7,13 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
-// HomeHandler serves the main page with form
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -32,174 +29,108 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(htmlContent)
 }
 
-// UploadHandler handles file upload and processing
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log := slog.With("handler", "UploadHandler")
 	log.Info("Received upload request", "remote_addr", r.RemoteAddr)
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
-	// Parse form (max 10MB)
-	err := r.ParseMultipartForm(10 << 20)
+	req, err := receiveRequest(w, r)
 	if err != nil {
-		http.Error(w, "Form parsing error: "+err.Error(), http.StatusBadRequest)
+		log.Error("Failed to receive request", "error", err)
+		http.Error(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Get file from form
+	defer os.Remove(path.Join("uploads", req.FileName))
+	defer os.Remove(path.Join("results", req.FileName))
+
+	err = ProcessFile(req)
+	if err != nil {
+		log.Error("Request processing failed", "error", err)
+		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
+		log.Error("File processing failed", "error", err)
+		return
+	}
+
+	if sendResponse(w, req) != nil {
+		log.Error("Failed to send response", "error", err)
+		http.Error(w, "Failed to send response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Info("Request processed", "filename", req.FileName)
+}
+
+func sendResponse(w http.ResponseWriter, req ProcessingRequest) error {
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"",
+		path.Join("uploads", req.FileName)))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	fileName := path.Join("results", req.FileName)
+	resFile, err := os.Stat(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to stat result file %s: %w", fileName, err)
+	}
+	w.Header().Set("Content-Length", strconv.FormatInt(resFile.Size(), 10))
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to open result file %s: %w", fileName, err)
+	}
+
+	writtenSize, err := io.Copy(w, file)
+	if err != nil || writtenSize != resFile.Size() {
+		return fmt.Errorf("failed writing response: %w", err)
+	}
+	return nil
+}
+
+func receiveRequest(w http.ResponseWriter, r *http.Request) (ProcessingRequest, error) {
+	var req ProcessingRequest
+
+	iterationsS := r.FormValue("iterations")
+	var err error
+	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
+	if err != nil || req.Iterations <= 0 {
+		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
+	}
+	waitTempS := r.FormValue("wait_temp")
+	req.WaitTemp, err = strconv.ParseInt(waitTempS, 10, 64)
+	if err != nil || req.WaitTemp < 0 {
+		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitTempS, err)
+	}
+	waitMinS := r.FormValue("wait_min")
+	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
+	if err != nil || req.WaitMin < 0 {
+		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
+	}
+
+	const maxFileSize = 100 * 1024 * 1024
+	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
+
+	err = r.ParseMultipartForm(maxFileSize)
+	if err != nil {
+		return req, fmt.Errorf("form parsing error: %w", err)
+	}
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "File retrieval error: "+err.Error(), http.StatusBadRequest)
-		return
+		return req, fmt.Errorf("file retrieval error: %w", err)
 	}
 	defer file.Close()
 
-	log.Info("Uploaded File", "filename", header.Filename)
-
-	iterationsS := r.FormValue("iterations")
-	iterations, err := strconv.ParseInt(iterationsS, 10, 64)
-	if err != nil || iterations <= 0 {
-		log.Error("Invalid iterations value: ", err)
-		http.Error(w, "Invalid iterations value: "+iterationsS, http.StatusBadRequest)
-		return
-	}
-	waitTempS := r.FormValue("wait_temp")
-	waitTemp, err := strconv.ParseInt(waitTempS, 10, 64)
-	if err != nil || waitTemp < 0 {
-		log.Error("Invalid wait_temp value", "error", err, "wait_temp raw", waitTempS)
-		http.Error(w, "Invalid wait_temp value: "+waitTempS, http.StatusBadRequest)
-		return
-	}
-	waitMinS := r.FormValue("wait_min")
-	waitMin, err := strconv.ParseInt(waitMinS, 10, 64)
-	if err != nil || waitMin < 0 {
-		log.Error("Invalid wait_sec value", "error", err, "wait_min raw", waitMinS)
-		http.Error(w, "Invalid wait_sec value: "+waitMinS, http.StatusBadRequest)
-		return
-	}
-
-	// Create unique filename
 	timestamp := time.Now().Unix()
-	filename := fmt.Sprintf("%d_%s", timestamp, header.Filename)
-	filepath := filepath.Join("uploads", filename)
+	req.FileName = fmt.Sprintf("%d_%s", timestamp, header.Filename)
+	filepath := path.Join("uploads", req.FileName)
 
-	// Save uploaded file
 	dst, err := os.Create(filepath)
 	if err != nil {
-		log.Error("File creation failed: ", "error", err)
-		http.Error(w, "File creation failed: "+err.Error(), http.StatusInternalServerError)
-		return
+		return req, fmt.Errorf("file creation failed: %w", err)
 	}
 	defer dst.Close()
 
 	_, err = io.Copy(dst, file)
 	if err != nil {
-		// Clean up partially created file on error
-		if removeErr := os.Remove(filepath); removeErr != nil {
-			log.Info("Warning: Failed to remove partially created file", "filename", filepath, "err", removeErr)
-		}
-		http.Error(w, "File saving error: "+err.Error(), http.StatusInternalServerError)
-		return
+		_ = os.Remove(filepath)
+		return req, fmt.Errorf("file saving error: %w", err)
 	}
-
-	// Create processing request
-	request := ProcessingRequest{
-		InputFile:  filepath,
-		Iterations: iterations,
-		WaitTemp:   waitTemp,
-		WaitMin:    waitMin,
-		Timestamp:  timestamp,
-	}
-
-	// Process file (ProcessFile will handle cleanup of input file)
-	result, err := ProcessFile(request)
-	if err != nil {
-		log.Error("File processing failed", "error", err)
-		// If ProcessFile failed, it should have cleaned up the input file already
-		// But let's make sure in case the error occurred before cleanup
-		if _, statErr := os.Stat(filepath); statErr == nil {
-			if removeErr := os.Remove(filepath); removeErr != nil {
-				slog.Warn("Warning: Failed to remove input file after processing error", "filepath", filepath, "err", removeErr)
-			}
-		}
-		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Set headers for immediate download
-	downloadFilename := fmt.Sprintf("processed_%s.gcode",
-		strings.TrimSuffix(header.Filename, path.Ext(header.Filename)))
-
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", downloadFilename))
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", strconv.Itoa(len(result.Data)))
-
-	// Write processed data directly to response
-	_, err = w.Write(result.Data)
-	if err != nil {
-		slog.Error("Failed writing response", "error", err)
-		return
-	}
-
-	slog.Info("File processed and downloaded", "filename", header.Filename, "downloadFilename", downloadFilename)
-	// Note: No result file cleanup needed here since data is streamed directly to response
-}
-
-// DownloadHandler serves the result file for download and cleans up after serving
-func DownloadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Get filename from URL
-	filename := strings.TrimPrefix(r.URL.Path, "/download/")
-	if filename == "" {
-		http.Error(w, "Filename not specified", http.StatusBadRequest)
-		return
-	}
-
-	filepath := filepath.Join("results", filename)
-
-	// Check if file exists
-	if _, err := os.Stat(filepath); os.IsNotExist(err) {
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
-
-	// Open file
-	file, err := os.Open(filepath)
-	if err != nil {
-		http.Error(w, "File opening error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-
-	// Get file info
-	stat, err := file.Stat()
-	if err != nil {
-		http.Error(w, "File info error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Set headers for download
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", strconv.FormatInt(stat.Size(), 10))
-
-	// Copy file to response
-	_, err = io.Copy(w, file)
-	if err != nil {
-		slog.Error("File transfer failed", "error", err)
-		return
-	}
-
-	file.Close()
-	if err := os.Remove(filepath); err != nil {
-		slog.Warn("Warning: Failed to remove result file %s after download", "filepath", filepath, "error", err)
-	} else {
-		slog.Info("Successfully removed result file after download", "filepath", filepath)
-	}
+	return req, nil
 }

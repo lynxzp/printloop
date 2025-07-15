@@ -28,7 +28,7 @@ func main() {
 
 	// Setup routes
 	http.HandleFunc("/", HomeHandler)
-	http.HandleFunc("/upload", UploadHandler)
+	http.HandleFunc("POST /upload", UploadHandler)
 
 	// Serve static files (CSS, JS, images)
 	http.Handle("/www/", http.StripPrefix("/www/", http.FileServer(http.Dir("www/"))))
