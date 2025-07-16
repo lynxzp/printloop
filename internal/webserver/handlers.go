@@ -1,4 +1,4 @@
-package main
+package webserver
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"printloop/internal/processor"
+	"printloop/internal/types"
 	"strconv"
 	"time"
 )
@@ -45,7 +47,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer os.Remove(inFileName)
 	defer os.Remove(outFileName)
 
-	err = ProcessFile(inFileName, outFileName, req)
+	err = processor.ProcessFile(inFileName, outFileName, req)
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
 		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
@@ -62,7 +64,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info("Request processed", "filename", req.FileName)
 }
 
-func sendResponse(w http.ResponseWriter, req ProcessingRequest) error {
+func sendResponse(w http.ResponseWriter, req types.ProcessingRequest) error {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"",
 		path.Join("uploads", req.FileName)))
 	w.Header().Set("Content-Type", "application/octet-stream")
@@ -85,8 +87,8 @@ func sendResponse(w http.ResponseWriter, req ProcessingRequest) error {
 	return nil
 }
 
-func receiveRequest(w http.ResponseWriter, r *http.Request) (ProcessingRequest, error) {
-	var req ProcessingRequest
+func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingRequest, error) {
+	var req types.ProcessingRequest
 
 	iterationsS := r.FormValue("iterations")
 	var err error

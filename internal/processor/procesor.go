@@ -1,6 +1,4 @@
-// file: processor.go
-// processor.go - Refactored with multiline start marker support
-package main
+package processor
 
 import (
 	"bufio"
@@ -8,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"printloop/internal/types"
 	"strings"
 )
 
 // GCodeProcessor ??? Core business logic separated from I/O
 type GCodeProcessor struct {
-	config ProcessingRequest
+	config types.ProcessingRequest
 }
 
 type ProcessingResult struct {
@@ -32,7 +31,7 @@ type MarkerPositions struct {
 	EndMarkerPos     int // Position of end marker
 }
 
-func (p *GCodeProcessor) ProcessLines(lines []string, markers PositionMarkers) (*ProcessingResult, error) {
+func (p *GCodeProcessor) processLines(lines []string, markers PositionMarkers) (*ProcessingResult, error) {
 	positions, err := p.findMarkerPositions(lines, markers)
 	if err != nil {
 		return nil, err
@@ -209,7 +208,7 @@ func writeLinesToWriter(writer io.Writer, lines []string) error {
 	return nil
 }
 
-func ProcessWithReaderWriter(reader io.ReadSeeker, writer io.Writer, config ProcessingRequest) error {
+func processWithReaderWriter(reader io.ReadSeeker, writer io.Writer, config types.ProcessingRequest) error {
 	// Read lines from reader
 	lines, err := readLinesFromReader(reader)
 	if err != nil {
@@ -223,7 +222,7 @@ func ProcessWithReaderWriter(reader io.ReadSeeker, writer io.Writer, config Proc
 		EndMarker:   "G625",
 	}
 
-	result, err := processor.ProcessLines(lines, markers)
+	result, err := processor.processLines(lines, markers)
 	if err != nil {
 		return fmt.Errorf("failed to process: %w", err)
 	}
@@ -236,7 +235,9 @@ func ProcessWithReaderWriter(reader io.ReadSeeker, writer io.Writer, config Proc
 	return nil
 }
 
-func ProcessFile(inputPath, outputPath string, config ProcessingRequest) error {
+// ProcessFile processing file without reading it into memory
+// file can be very large
+func ProcessFile(inputPath, outputPath string, config types.ProcessingRequest) error {
 	inputFile, err := os.Open(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
@@ -249,5 +250,5 @@ func ProcessFile(inputPath, outputPath string, config ProcessingRequest) error {
 	}
 	defer outputFile.Close()
 
-	return ProcessWithReaderWriter(inputFile, outputFile, config)
+	return processWithReaderWriter(inputFile, outputFile, config)
 }

@@ -1,7 +1,8 @@
 // file: processor_ProcessFile_test.go
-package main
+package processor
 
 import (
+	"printloop/internal/types"
 	"reflect"
 	"testing"
 )
@@ -440,12 +441,12 @@ func TestGCodeProcessor_ProcessLines(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := ProcessingRequest{
+			config := types.ProcessingRequest{
 				Iterations: 2,
 			}
 			processor := &GCodeProcessor{config: config}
 
-			result, err := processor.ProcessLines(tt.input, tt.markers)
+			result, err := processor.processLines(tt.input, tt.markers)
 
 			if tt.expectError {
 				if err == nil {

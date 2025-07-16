@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"printloop/internal/webserver"
 	"strconv"
 )
 
@@ -27,8 +28,8 @@ func main() {
 	}
 
 	// Setup routes
-	http.HandleFunc("/", HomeHandler)
-	http.HandleFunc("POST /upload", UploadHandler)
+	http.HandleFunc("/", webserver.HomeHandler)
+	http.HandleFunc("POST /upload", webserver.UploadHandler)
 
 	// Serve static files (CSS, JS, images)
 	http.Handle("/www/", http.StripPrefix("/www/", http.FileServer(http.Dir("www/"))))

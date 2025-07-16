@@ -1,4 +1,4 @@
-package main
+package types
 
 // ProcessingRequest represents a file processing request
 type ProcessingRequest struct {
