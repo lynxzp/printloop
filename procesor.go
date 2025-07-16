@@ -1,4 +1,5 @@
-// processor.go - Refactored with separated concerns
+// file: processor.go
+// processor.go - Refactored with multiline start marker support
 package main
 
 import (
@@ -20,24 +21,31 @@ type ProcessingResult struct {
 }
 
 type PositionMarkers struct {
-	StartMarker string // e.g., "START_PRINT"
-	EndMarker   string // e.g., "END_PRINT"
+	StartMarker []string // For multiline markers, each element is a line
+	EndMarker   string   // Keep single line for now
+}
+
+// MarkerPositions represents the found positions of start and end markers
+type MarkerPositions struct {
+	StartMarkerBegin int // First line of start marker
+	StartMarkerEnd   int // Last line of start marker
+	EndMarkerPos     int // Position of end marker
 }
 
 func (p *GCodeProcessor) ProcessLines(lines []string, markers PositionMarkers) (*ProcessingResult, error) {
-	startMarkerPos, endMarkerPos, err := p.findMarkerPositions(lines, markers)
+	positions, err := p.findMarkerPositions(lines, markers)
 	if err != nil {
 		return nil, err
 	}
 
 	result := &ProcessingResult{}
 
-	// Copy header (before start marker, including the start marker)
-	result.Lines = append(result.Lines, lines[:startMarkerPos+1]...)
+	// Copy header (before start marker, including the complete start marker)
+	result.Lines = append(result.Lines, lines[:positions.StartMarkerEnd+1]...)
 
-	// Process body with iterations (between markers, excluding both markers)
-	bodyLines := lines[startMarkerPos+1 : endMarkerPos]
-	endMarkerLine := lines[endMarkerPos]
+	// Process body with iterations (between end of start marker and end marker)
+	bodyLines := lines[positions.StartMarkerEnd+1 : positions.EndMarkerPos]
+	endMarkerLine := lines[positions.EndMarkerPos]
 
 	for i := int64(0); i < p.config.Iterations; i++ {
 		// Add body content
@@ -50,36 +58,88 @@ func (p *GCodeProcessor) ProcessLines(lines []string, markers PositionMarkers) (
 	}
 
 	// Copy footer (after end marker, excluding the end marker)
-	result.Lines = append(result.Lines, lines[endMarkerPos+1:]...)
+	result.Lines = append(result.Lines, lines[positions.EndMarkerPos+1:]...)
 
 	return result, nil
 }
 
-func (p *GCodeProcessor) findMarkerPositions(lines []string, markers PositionMarkers) (int, int, error) {
-	startMarkerPos := -1
-	endMarkerPos := -1
+func (p *GCodeProcessor) findMarkerPositions(lines []string, markers PositionMarkers) (*MarkerPositions, error) {
+	if len(markers.StartMarker) == 0 {
+		return nil, errors.New("start marker cannot be empty")
+	}
 
+	startMarkerBegin, startMarkerEnd, err := p.findMultilineStartMarker(lines, markers.StartMarker)
+	if err != nil {
+		return nil, err
+	}
+
+	endMarkerPos, err := p.findSingleLineEndMarker(lines, markers.EndMarker, startMarkerEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	if startMarkerEnd >= endMarkerPos {
+		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
+	}
+
+	return &MarkerPositions{
+		StartMarkerBegin: startMarkerBegin,
+		StartMarkerEnd:   startMarkerEnd,
+		EndMarkerPos:     endMarkerPos,
+	}, nil
+}
+
+func (p *GCodeProcessor) findMultilineStartMarker(lines []string, startMarkerLines []string) (int, int, error) {
+	if len(startMarkerLines) == 1 {
+		// Single line marker - backward compatibility
+		return p.findSingleLineStartMarker(lines, startMarkerLines[0])
+	}
+
+	// Multiline marker search
+	for i := 0; i <= len(lines)-len(startMarkerLines); i++ {
+		match := true
+		for j, markerLine := range startMarkerLines {
+			cleanLine := strings.TrimSpace(lines[i+j])
+			cleanMarker := strings.TrimSpace(markerLine)
+			if !strings.Contains(cleanLine, cleanMarker) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i, i + len(startMarkerLines) - 1, nil
+		}
+	}
+
+	return 0, 0, errors.New("multiline start marker not found")
+}
+
+func (p *GCodeProcessor) findSingleLineStartMarker(lines []string, startMarker string) (int, int, error) {
 	for i, line := range lines {
 		cleanLine := strings.TrimSpace(line)
-		if strings.Contains(cleanLine, markers.StartMarker) {
-			startMarkerPos = i // Position OF start marker
+		if strings.Contains(cleanLine, startMarker) {
+			return i, i, nil // Same position for single line
 		}
-		if strings.Contains(cleanLine, markers.EndMarker) {
-			endMarkerPos = i // Position OF end marker
+	}
+	return 0, 0, errors.New("single line start marker not found")
+}
+
+func (p *GCodeProcessor) findSingleLineEndMarker(lines []string, endMarker string, searchFromIndex int) (int, error) {
+	endMarkerPos := -1
+
+	// Search from after the start marker to end of file, keeping track of LAST occurrence
+	for i := searchFromIndex + 1; i < len(lines); i++ {
+		cleanLine := strings.TrimSpace(lines[i])
+		if strings.Contains(cleanLine, endMarker) {
+			endMarkerPos = i // Keep updating to find the LAST occurrence
 		}
 	}
 
-	if startMarkerPos == -1 {
-		return 0, 0, errors.New("start marker not found")
-	}
 	if endMarkerPos == -1 {
-		return 0, 0, errors.New("end marker not found")
-	}
-	if startMarkerPos >= endMarkerPos {
-		return 0, 0, errors.New("invalid marker positions")
+		return 0, errors.New("end marker not found")
 	}
 
-	return startMarkerPos, endMarkerPos, nil
+	return endMarkerPos, nil
 }
 
 func (p *GCodeProcessor) generateIterationCode(iteration int64) []string {
@@ -120,7 +180,7 @@ func ProcessWithReaderWriter(reader io.ReadSeeker, writer io.Writer, config Proc
 	// Process with core logic
 	processor := &GCodeProcessor{config: config}
 	markers := PositionMarkers{
-		StartMarker: "M1007 S1",
+		StartMarker: []string{"M1007 S1"}, // Convert to slice for consistency
 		EndMarker:   "G625",
 	}
 
