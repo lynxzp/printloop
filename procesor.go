@@ -41,7 +41,10 @@ func (p *GCodeProcessor) ProcessLines(lines []string, markers PositionMarkers) (
 	result := &ProcessingResult{}
 
 	// Copy header (before start marker, including the complete start marker)
-	result.Lines = append(result.Lines, lines[:positions.StartMarkerEnd+1]...)
+	for i := 0; i <= positions.StartMarkerEnd; i++ {
+		splitLines := p.processLineWithMarkerSplit(lines[i], markers.StartMarker)
+		result.Lines = append(result.Lines, splitLines...)
+	}
 
 	// Process body with iterations (between end of start marker and end marker)
 	bodyLines := lines[positions.StartMarkerEnd+1 : positions.EndMarkerPos]
@@ -61,6 +64,25 @@ func (p *GCodeProcessor) ProcessLines(lines []string, markers PositionMarkers) (
 	result.Lines = append(result.Lines, lines[positions.EndMarkerPos+1:]...)
 
 	return result, nil
+}
+
+// processLineWithMarkerSplit splits a line if it contains a marker followed by a comment
+func (p *GCodeProcessor) processLineWithMarkerSplit(line string, markers []string) []string {
+	// Check if this line contains any of the markers and has a semicolon
+	for _, marker := range markers {
+		cleanMarker := strings.TrimSpace(marker)
+		if strings.Contains(line, cleanMarker) {
+			semicolonPos := strings.Index(line, ";")
+			if semicolonPos != -1 {
+				before := strings.TrimSpace(line[:semicolonPos])
+				after := strings.TrimSpace(line[semicolonPos:])
+				if before != "" && after != "" {
+					return []string{before, after}
+				}
+			}
+		}
+	}
+	return []string{line}
 }
 
 func (p *GCodeProcessor) findMarkerPositions(lines []string, markers PositionMarkers) (*MarkerPositions, error) {
@@ -95,19 +117,36 @@ func (p *GCodeProcessor) findMultilineStartMarker(lines []string, startMarkerLin
 		return p.findSingleLineStartMarker(lines, startMarkerLines[0])
 	}
 
-	// Multiline marker search
-	for i := 0; i <= len(lines)-len(startMarkerLines); i++ {
-		match := true
-		for j, markerLine := range startMarkerLines {
-			cleanLine := strings.TrimSpace(lines[i+j])
-			cleanMarker := strings.TrimSpace(markerLine)
-			if !strings.Contains(cleanLine, cleanMarker) {
-				match = false
+	// Multiline marker search with support for empty/comment lines
+	for startIdx := 0; startIdx <= len(lines)-1; startIdx++ {
+		// Try to match starting from startIdx
+		lineIdx := startIdx
+		markerIdx := 0
+		firstMarkerIdx := -1
+
+		for markerIdx < len(startMarkerLines) && lineIdx < len(lines) {
+			cleanLine := strings.TrimSpace(lines[lineIdx])
+			cleanMarker := strings.TrimSpace(startMarkerLines[markerIdx])
+
+			if strings.Contains(cleanLine, cleanMarker) {
+				// Found this marker line
+				if firstMarkerIdx == -1 {
+					firstMarkerIdx = lineIdx
+				}
+				markerIdx++
+				lineIdx++
+			} else if cleanLine == "" || strings.HasPrefix(cleanLine, ";") {
+				// Skip empty or comment lines
+				lineIdx++
+			} else {
+				// This line doesn't match and isn't skippable, so this start position doesn't work
 				break
 			}
 		}
-		if match {
-			return i, i + len(startMarkerLines) - 1, nil
+
+		if markerIdx == len(startMarkerLines) {
+			// Found all marker lines
+			return firstMarkerIdx, lineIdx - 1, nil
 		}
 	}
 
