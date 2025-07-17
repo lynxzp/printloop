@@ -35,6 +35,7 @@ function initializeApp() {
 
     // Add input validation and formatting
     setupInputValidation();
+    setupSelectValidation();
 }
 
 function setupInputValidation() {
@@ -66,6 +67,35 @@ function setupInputValidation() {
     });
 }
 
+function setupSelectValidation() {
+    const selectInputs = document.querySelectorAll('.form-select');
+
+    selectInputs.forEach(select => {
+        select.addEventListener('change', function() {
+            // Add visual feedback for selection
+            if (this.value) {
+                this.style.borderColor = '#00b894';
+                this.style.boxShadow = '0 0 0 3px rgba(0, 184, 148, 0.1)';
+
+                setTimeout(() => {
+                    this.style.borderColor = '#e9ecef';
+                    this.style.boxShadow = 'none';
+                }, 1000);
+            }
+        });
+
+        select.addEventListener('focus', function() {
+            this.style.borderColor = '#667eea';
+            this.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+        });
+
+        select.addEventListener('blur', function() {
+            this.style.borderColor = '#e9ecef';
+            this.style.boxShadow = 'none';
+        });
+    });
+}
+
 function handleFormSubmit(event) {
     event.preventDefault();
 
@@ -90,6 +120,7 @@ function handleFormSubmit(event) {
 
     // Add only enabled parameters
     const checkboxConfigs = [
+        { checkboxId: 'printer_checkbox', inputId: 'printer', name: 'printer' },
         { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
         { checkboxId: 'wait_temp_checkbox', inputId: 'wait_temp', name: 'wait_temp' },
         { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' }

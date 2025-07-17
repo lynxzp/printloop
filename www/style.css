@@ -207,6 +207,43 @@ input[type="number"]:focus {
     transform: translateY(-1px);
 }
 
+/* Select Dropdown Styles */
+.form-select {
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23667eea" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-select:hover {
+    border-color: #667eea;
+}
+
+.form-select option {
+    padding: 10px;
+    background: white;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
 .input-unit {
     color: #6c757d;
     font-weight: 500;
@@ -335,7 +372,7 @@ input[type="number"]:focus {
         gap: 10px;
     }
 
-    input[type="number"] {
+    input[type="number"], .form-select {
         width: 90px;
     }
 
@@ -383,7 +420,7 @@ input[type="number"]:focus {
         font-size: 0.95rem;
     }
 
-    input[type="number"] {
+    input[type="number"], .form-select {
         width: 90px;
     }
 }
