@@ -88,8 +88,15 @@ func sendResponse(w http.ResponseWriter, req types.ProcessingRequest) error {
 func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingRequest, error) {
 	var req types.ProcessingRequest
 
+	const maxFileSize = 1024 * 1024 * 1024
+	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
+
+	err := r.ParseMultipartForm(1024 * 1024) // receive up to 1MB of form data
+	if err != nil {
+		return req, fmt.Errorf("form parsing error: %w", err)
+	}
+
 	iterationsS := r.FormValue("iterations")
-	var err error
 	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
 	if err != nil || req.Iterations <= 0 {
 		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
@@ -103,14 +110,6 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingReq
 	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
 	if err != nil || req.WaitMin < 0 {
 		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
-	}
-
-	const maxFileSize = 100 * 1024 * 1024
-	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
-
-	err = r.ParseMultipartForm(maxFileSize)
-	if err != nil {
-		return req, fmt.Errorf("form parsing error: %w", err)
 	}
 
 	file, header, err := r.FormFile("file")
