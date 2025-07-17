@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"printloop/internal/types"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -21,9 +23,20 @@ type StreamingProcessor struct {
 
 // MarkerPositions represents the found positions of start and end markers
 type MarkerPositions struct {
-	StartMarkerBegin int64 // First line of start marker (0-based)
-	StartMarkerEnd   int64 // Last line of start marker (0-based)
-	EndMarkerPos     int64 // Position of end marker (0-based)
+	StartMarkerBegin int64   // First line of start marker (0-based)
+	StartMarkerEnd   int64   // Last line of start marker (0-based)
+	EndMarkerPos     int64   // Position of end marker (0-based)
+	LastPrintX       float64 // X coordinate from last print command (G1 with positive E)
+	LastPrintY       float64 // Y coordinate from last print command (G1 with positive E)
+	LastPrintZ       float64 // Z coordinate that was active during last print command
+}
+
+// GCodeCoordinates holds parsed G-code coordinates
+type GCodeCoordinates struct {
+	X *float64
+	Y *float64
+	Z *float64
+	E *float64
 }
 
 func NewStreamingProcessor(config types.ProcessingRequest, markers PositionMarkers) *StreamingProcessor {
@@ -40,7 +53,7 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 		return err
 	}
 
-	// Pass 1: Find marker positions
+	// Pass 1: Find marker positions and extract G-code coordinates
 	positions, err := p.findMarkerPositions(inputPath)
 	if err != nil {
 		return err
@@ -89,29 +102,165 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	return nil
 }
 
-// findMarkerPositions uses multiple passes to find marker positions without loading entire file
+// findMarkerPositions uses multiple passes to find marker positions and extract G-code coordinates
 func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositions, error) {
-	// Pass 1: Find start marker positions
-	startBegin, startEnd, err := p.findStartMarkerPositions(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
-	// Pass 2: Find last end marker position
-	endPos, err := p.findLastEndMarkerPosition(filePath, startEnd)
-	if err != nil {
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+
+	// Initialize result
+	positions := &MarkerPositions{
+		StartMarkerBegin: -1,
+		StartMarkerEnd:   -1,
+		EndMarkerPos:     -1,
+	}
+
+	// Tracking variables for G-code coordinates
+	var lastPrintX, lastPrintY, lastPrintZ *float64
+	var currentZ *float64 // Track current Z coordinate as we scan
+
+	// Sliding window for start marker detection
+	window := make([]string, 0, len(p.markers.StartMarker)+10)
+	startMarkerFound := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Parse G-code coordinates from this line
+		if coords := p.parseGCodeLine(line); coords != nil {
+			// Update current Z from any G1 command
+			if coords.Z != nil {
+				currentZ = coords.Z
+			}
+
+			// Update last print coordinates (G1 with positive E)
+			if coords.E != nil && *coords.E > 0 {
+				// This is a print command - update print coordinates
+				if coords.X != nil {
+					lastPrintX = coords.X
+				}
+				if coords.Y != nil {
+					lastPrintY = coords.Y
+				}
+				// Remember the Z that was active during this print command
+				if currentZ != nil {
+					lastPrintZ = currentZ
+				}
+			}
+		}
+
+		// Start marker detection using sliding window
+		if !startMarkerFound {
+			window = append(window, line)
+
+			// Keep window size reasonable
+			maxWindowSize := len(p.markers.StartMarker) + 10
+			if len(window) > maxWindowSize {
+				window = window[1:] // Remove oldest line
+			}
+
+			// Try to find start marker pattern in current window
+			if matchPos := p.findStartMarkerInWindow(window, lineNum-int64(len(window))+1); matchPos != nil {
+				positions.StartMarkerBegin = matchPos.begin
+				positions.StartMarkerEnd = matchPos.end
+				startMarkerFound = true
+			}
+		}
+
+		// End marker detection (find LAST occurrence after start marker)
+		if startMarkerFound && strings.Contains(strings.TrimSpace(line), strings.TrimSpace(p.markers.EndMarker)) {
+			positions.EndMarkerPos = lineNum
+		}
+
+		lineNum++
+	}
+
+	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 
-	if startEnd >= endPos {
+	// Validate that we found all required markers
+	if positions.StartMarkerBegin == -1 {
+		return nil, fmt.Errorf("start marker not found: %v", p.markers.StartMarker)
+	}
+
+	if positions.EndMarkerPos == -1 {
+		return nil, fmt.Errorf("end marker '%s' not found after line %d", p.markers.EndMarker, positions.StartMarkerEnd)
+	}
+
+	if positions.StartMarkerEnd >= positions.EndMarkerPos {
 		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
 	}
 
-	return &MarkerPositions{
-		StartMarkerBegin: startBegin,
-		StartMarkerEnd:   startEnd,
-		EndMarkerPos:     endPos,
-	}, nil
+	// Store the last coordinates found
+	if lastPrintX != nil {
+		positions.LastPrintX = *lastPrintX
+	}
+	if lastPrintY != nil {
+		positions.LastPrintY = *lastPrintY
+	}
+	if lastPrintZ != nil {
+		positions.LastPrintZ = *lastPrintZ
+	}
+
+	return positions, nil
+}
+
+// parseGCodeLine parses a G-code line and extracts coordinates
+func (p *StreamingProcessor) parseGCodeLine(line string) *GCodeCoordinates {
+	// Trim and check if it's a G1 command
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "G1") {
+		return nil
+	}
+
+	// Regular expressions for extracting coordinates
+	xRegex := regexp.MustCompile(`X([-+]?\d*\.?\d+)`)
+	yRegex := regexp.MustCompile(`Y([-+]?\d*\.?\d+)`)
+	zRegex := regexp.MustCompile(`Z([-+]?\d*\.?\d+)`)
+	eRegex := regexp.MustCompile(`E([-+]?\d*\.?\d+)`)
+
+	coords := &GCodeCoordinates{}
+
+	// Extract X coordinate
+	if match := xRegex.FindStringSubmatch(trimmed); match != nil {
+		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+			coords.X = &val
+		}
+	}
+
+	// Extract Y coordinate
+	if match := yRegex.FindStringSubmatch(trimmed); match != nil {
+		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+			coords.Y = &val
+		}
+	}
+
+	// Extract Z coordinate
+	if match := zRegex.FindStringSubmatch(trimmed); match != nil {
+		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+			coords.Z = &val
+		}
+	}
+
+	// Extract E coordinate
+	if match := eRegex.FindStringSubmatch(trimmed); match != nil {
+		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+			coords.E = &val
+		}
+	}
+
+	// Return coordinates if we found any
+	if coords.X != nil || coords.Y != nil || coords.Z != nil || coords.E != nil {
+		return coords
+	}
+
+	return nil
 }
 
 // findStartMarkerPositions finds multiline start marker using sliding window
