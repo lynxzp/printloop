@@ -161,9 +161,22 @@ h1 {
 .form-group {
     margin-bottom: 25px;
     display: grid;
-    grid-template-columns: 200px 2fr auto;
+    grid-template-columns: auto 4fr 1fr 1fr;
     align-items: center;
-    gap: 20px;
+    gap: 15px;
+}
+
+/* Checkbox Styles */
+.form-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #667eea;
+    cursor: pointer;
+    transform: scale(1.2);
+}
+
+.form-checkbox:checked {
+    accent-color: #00b894;
 }
 
 label {
@@ -172,10 +185,12 @@ label {
     font-size: 1rem;
     display: flex;
     align-items: center;
+    cursor: pointer;
+    transition: color 0.3s ease;
 }
 
 input[type="number"] {
-    padding: 15px 20px;
+    padding: 12px 15px;
     border: 2px solid #e9ecef;
     border-radius: 12px;
     font-size: 1rem;
@@ -195,12 +210,12 @@ input[type="number"]:focus {
 .input-unit {
     color: #6c757d;
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     background: #f8f9fa;
-    padding: 15px 15px;
+    padding: 12px 8px;
     border-radius: 12px;
     border: 2px solid #e9ecef;
-    min-width: 80px;
+    min-width: 50px;
     text-align: center;
 }
 
@@ -316,13 +331,18 @@ input[type="number"]:focus {
     }
 
     .form-group {
-        grid-template-columns: 1fr;
+        grid-template-columns: auto 1fr 90px 60px;
         gap: 10px;
-        text-align: left;
+    }
+
+    input[type="number"] {
+        width: 90px;
     }
 
     .input-unit {
-        justify-self: start;
+        min-width: 45px;
+        padding: 12px 6px;
+        font-size: 0.8rem;
     }
 
     .upload-area {
@@ -344,6 +364,16 @@ input[type="number"]:focus {
 }
 
 @media (max-width: 480px) {
+    .form-group {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        text-align: left;
+    }
+
+    .form-group > * {
+        justify-self: start;
+    }
+
     .upload-area p {
         font-size: 1.1rem;
     }
@@ -351,6 +381,10 @@ input[type="number"]:focus {
     .browse-button {
         padding: 10px 25px;
         font-size: 0.95rem;
+    }
+
+    input[type="number"] {
+        width: 90px;
     }
 }
 

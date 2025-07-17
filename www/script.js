@@ -80,7 +80,29 @@ function handleFormSubmit(event) {
     }
 
     const form = document.getElementById('uploadForm');
-    const formData = new FormData(form);
+    const formData = new FormData();
+
+    // Add file
+    const fileInput = document.getElementById('file');
+    if (fileInput.files[0]) {
+        formData.append('file', fileInput.files[0]);
+    }
+
+    // Add only enabled parameters
+    const checkboxConfigs = [
+        { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
+        { checkboxId: 'wait_temp_checkbox', inputId: 'wait_temp', name: 'wait_temp' },
+        { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' }
+    ];
+
+    checkboxConfigs.forEach(config => {
+        const checkbox = document.getElementById(config.checkboxId);
+        const input = document.getElementById(config.inputId);
+
+        if (checkbox && checkbox.checked && input) {
+            formData.append(config.name, input.value);
+        }
+    });
 
     fetch('/upload', {
         method: 'POST',
