@@ -161,7 +161,7 @@ h1 {
 .form-group {
     margin-bottom: 25px;
     display: grid;
-    grid-template-columns: 200px 1fr auto;
+    grid-template-columns: 200px 2fr auto;
     align-items: center;
     gap: 20px;
 }

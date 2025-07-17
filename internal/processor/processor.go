@@ -375,7 +375,7 @@ func (p *StreamingProcessor) validateInput() error {
 func ProcessFile(inputPath, outputPath string, config types.ProcessingRequest) error {
 	// Create processor with default markers (these should be configurable)
 	markers := PositionMarkers{
-		StartMarker: []string{"M1007 S1"},
+		StartMarker: []string{"M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"},
 		EndMarker:   "M625",
 	}
 
