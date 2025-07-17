@@ -41,8 +41,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	inFileName := path.Join("uploads", req.FileName)
-	outFileName := path.Join("results", req.FileName)
+	inFileName := path.Join("files/uploads", req.FileName)
+	outFileName := path.Join("files/results", req.FileName)
 
 	defer os.Remove(inFileName)
 	defer os.Remove(outFileName)
@@ -51,7 +51,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
 		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
-		log.Error("File processing failed", "error", err)
 		return
 	}
 
@@ -65,10 +64,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendResponse(w http.ResponseWriter, req types.ProcessingRequest) error {
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"",
-		path.Join("uploads", req.FileName)))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", req.FileName))
 	w.Header().Set("Content-Type", "application/octet-stream")
-	fileName := path.Join("results", req.FileName)
+	fileName := path.Join("files/results", req.FileName)
 	resFile, err := os.Stat(fileName)
 	if err != nil {
 		return fmt.Errorf("failed to stat result file %s: %w", fileName, err)
@@ -123,7 +121,7 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingReq
 
 	timestamp := time.Now().Unix()
 	req.FileName = fmt.Sprintf("%d_%s", timestamp, header.Filename)
-	filepath := path.Join("uploads", req.FileName)
+	filepath := path.Join("files/uploads", req.FileName)
 
 	dst, err := os.Create(filepath)
 	if err != nil {

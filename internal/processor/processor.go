@@ -376,7 +376,7 @@ func ProcessFile(inputPath, outputPath string, config types.ProcessingRequest) e
 	// Create processor with default markers (these should be configurable)
 	markers := PositionMarkers{
 		StartMarker: []string{"M1007 S1"},
-		EndMarker:   "G625",
+		EndMarker:   "M625",
 	}
 
 	processor := NewStreamingProcessor(config, markers)
