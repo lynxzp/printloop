@@ -6,4 +6,5 @@ type ProcessingRequest struct {
 	Iterations int64
 	WaitTemp   int64
 	WaitMin    int64
+	Printer    string
 }

@@ -17,8 +17,9 @@ type PositionMarkers struct {
 }
 
 type StreamingProcessor struct {
-	config  types.ProcessingRequest
-	markers PositionMarkers
+	config    types.ProcessingRequest
+	markers   PositionMarkers
+	positions MarkerPositions
 }
 
 // MarkerPositions represents the found positions of start and end markers
@@ -54,10 +55,12 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	}
 
 	// Pass 1: Find marker positions and extract G-code coordinates
-	positions, err := p.findMarkerPositions(inputPath)
+	var err error
+	pos, err := p.findMarkerPositions(inputPath)
 	if err != nil {
 		return err
 	}
+	p.positions = *pos
 
 	// Open output file
 	outputFile, err := os.Create(outputPath)
@@ -70,21 +73,21 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	defer writer.Flush()
 
 	// Pass 2: Stream header (lines 0 to StartMarkerEnd inclusive)
-	if err := p.streamLinesRange(inputPath, writer, 0, positions.StartMarkerEnd, true); err != nil {
+	if err := p.streamLinesRange(inputPath, writer, 0, p.positions.StartMarkerEnd, true); err != nil {
 		return fmt.Errorf("failed to stream header: %w", err)
 	}
 
 	// Pass 3: For each iteration, stream body + end marker + generated content
 	for i := int64(0); i < p.config.Iterations; i++ {
 		// Stream body (lines after StartMarkerEnd to before EndMarkerPos)
-		if positions.StartMarkerEnd+1 < positions.EndMarkerPos {
-			if err := p.streamLinesRange(inputPath, writer, positions.StartMarkerEnd+1, positions.EndMarkerPos-1, false); err != nil {
+		if p.positions.StartMarkerEnd+1 < p.positions.EndMarkerPos {
+			if err := p.streamLinesRange(inputPath, writer, p.positions.StartMarkerEnd+1, p.positions.EndMarkerPos-1, false); err != nil {
 				return fmt.Errorf("failed to stream body for iteration %d: %w", i+1, err)
 			}
 		}
 
 		// Stream end marker line
-		if err := p.streamLinesRange(inputPath, writer, positions.EndMarkerPos, positions.EndMarkerPos, false); err != nil {
+		if err := p.streamLinesRange(inputPath, writer, p.positions.EndMarkerPos, p.positions.EndMarkerPos, false); err != nil {
 			return fmt.Errorf("failed to stream end marker for iteration %d: %w", i+1, err)
 		}
 
@@ -95,7 +98,7 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	}
 
 	// Pass 4: Stream footer (lines after EndMarkerPos to EOF)
-	if err := p.streamLinesFromPosition(inputPath, writer, positions.EndMarkerPos+1); err != nil {
+	if err := p.streamLinesFromPosition(inputPath, writer, p.positions.EndMarkerPos+1); err != nil {
 		return fmt.Errorf("failed to stream footer: %w", err)
 	}
 
@@ -462,7 +465,10 @@ func (p *StreamingProcessor) streamLinesFromPosition(filePath string, writer *bu
 
 // streamGeneratedContent writes generated content for an iteration
 func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iteration int64) error {
-	lines := p.generateIterationCode(iteration)
+	lines, err := p.generateIterationCode(p.config.Printer, iteration)
+	if err != nil {
+		return fmt.Errorf("failed to generate iteration code: %w", err)
+	}
 	for _, line := range lines {
 		if _, err := fmt.Fprintln(writer, line); err != nil {
 			return err
@@ -489,11 +495,33 @@ func (p *StreamingProcessor) processLineWithMarkerSplit(line string, markers []s
 	return []string{line}
 }
 
-func (p *StreamingProcessor) generateIterationCode(iteration int64) []string {
-	return []string{
-		fmt.Sprintf("; Generated code - Iteration %d", iteration),
-		fmt.Sprintf("; Generated code - End iteration %d", iteration),
+func (p *StreamingProcessor) generateIterationCode(printer string, iteration int64) ([]string, error) {
+	switch printer {
+	case "unit tests":
+		return []string{
+			fmt.Sprintf("; Generated code - Iteration %d", iteration),
+			fmt.Sprintf("; Generated code - End iteration %d", iteration),
+		}, nil
+	case "A1 mini":
+		res := []string{
+			"======================================================================",
+			fmt.Sprintf("; Generated code for A1 mini - Iteration %d", iteration),
+		}
+		if p.config.WaitTemp > 0 {
+			res = append(res, fmt.Sprintf("M190 R%d ; Set wait bed temperature", p.config.WaitTemp))
+		}
+		if p.config.WaitMin > 0 {
+			res = append(res, fmt.Sprintf("G4 S%d ; Wait timeout", p.config.WaitMin*60))
+		}
+		res = append(res, fmt.Sprintf("G1 Y179.99 ; Move back"))
+		res = append(res, fmt.Sprintf("G1 X%.2f ; Move to last print X position", p.positions.LastPrintX))
+		z := max(p.positions.LastPrintZ-50, 0.5)
+		res = append(res, fmt.Sprintf("G1 Z%.2f ; Move to Z position", z))
+		res = append(res, fmt.Sprintf("G1 Y0; Push printed item"))
+		res = append(res, "======================================================================")
+		return res, nil
 	}
+	return nil, errors.New("unsupported printer type: " + printer)
 }
 
 func (p *StreamingProcessor) validateInput() error {

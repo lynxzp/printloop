@@ -103,14 +103,15 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingReq
 	}
 	waitTempS := r.FormValue("wait_temp")
 	req.WaitTemp, err = strconv.ParseInt(waitTempS, 10, 64)
-	if err != nil || req.WaitTemp < 0 {
+	if (err != nil || req.WaitTemp < 0) && waitTempS != "" {
 		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitTempS, err)
 	}
 	waitMinS := r.FormValue("wait_min")
 	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
-	if err != nil || req.WaitMin < 0 {
+	if (err != nil || req.WaitMin < 0) && waitMinS != "" {
 		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
 	}
+	req.Printer = r.FormValue("printer")
 
 	file, header, err := r.FormFile("file")
 	if err != nil {

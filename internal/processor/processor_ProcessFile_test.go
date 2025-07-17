@@ -488,6 +488,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			// Create processor with test markers
 			config := types.ProcessingRequest{
 				Iterations: 2, // Based on expected outputs showing 2 iterations
+				Printer:    "unit tests",
 			}
 			processor := NewStreamingProcessor(config, tt.markers)
 
