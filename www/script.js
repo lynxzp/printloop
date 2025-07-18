@@ -321,32 +321,6 @@ function showSuccess(message) {
     }, 4000);
 }
 
-// Enhanced keyboard shortcuts
-document.addEventListener('keydown', function(event) {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        const form = document.getElementById('uploadForm');
-        if (form) {
-            form.requestSubmit();
-        }
-    }
-
-    if (event.key === 'Escape') {
-        const fileInput = document.getElementById('file');
-        const fileInfo = document.getElementById('fileInfo');
-        const uploadIcon = document.querySelector('.upload-icon');
-
-        if (fileInput && fileInfo) {
-            fileInput.value = '';
-            fileInfo.style.display = 'none';
-
-            if (uploadIcon) {
-                uploadIcon.textContent = '📁';
-                uploadIcon.style.color = '#667eea';
-            }
-        }
-    }
-});
-
 // Add smooth scrolling for mobile
 if ('scrollBehavior' in document.documentElement.style) {
     document.documentElement.style.scrollBehavior = 'smooth';
