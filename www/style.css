@@ -167,6 +167,11 @@ h1 {
     gap: 12px;
 }
 
+.form-group input[type="number"] {
+    justify-self: stretch;
+    width: 100%;
+}
+
 /* Checkbox Styles */
 .form-checkbox {
     width: 18px;
