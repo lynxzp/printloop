@@ -31,8 +31,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER1",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START_PRINT"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START_PRINT"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER1",
@@ -61,8 +61,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START_PRINT"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START_PRINT"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -91,8 +91,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER1",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START_PRINT_LINE1", "START_PRINT_LINE2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START_PRINT_LINE1", "START_PRINT_LINE2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER1",
@@ -125,8 +125,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"M1007 S1", "G1 X0 Y0", "G1 Z0.2"},
-				EndMarker:   "G625",
+				EndInitSection:  []string{"M1007 S1", "G1 X0 Y0", "G1 Z0.2"},
+				EndPrintSection: "G625",
 			},
 			expected: []string{
 				"HEADER",
@@ -159,8 +159,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -195,8 +195,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -232,8 +232,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -268,8 +268,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -303,8 +303,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -338,8 +338,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -373,8 +373,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER",
@@ -399,8 +399,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name:  "missing start marker - multiline",
 			input: []string{"HEADER", "START1", "BODY", "END_PRINT"},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expectError: true,
 		},
@@ -408,8 +408,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name:  "missing end marker",
 			input: []string{"HEADER", "START1", "START2", "BODY"},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expectError: true,
 		},
@@ -417,8 +417,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name:  "empty start marker",
 			input: []string{"HEADER", "BODY", "END_PRINT"},
 			markers: PositionMarkers{
-				StartMarker: []string{},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{},
+				EndPrintSection: "END_PRINT",
 			},
 			expectError: true,
 		},
@@ -434,8 +434,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START1", "START2"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START1", "START2"},
+				EndPrintSection: "END_PRINT",
 			},
 			expectError: true,
 		},
@@ -451,8 +451,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"FOOTER1",
 			},
 			markers: PositionMarkers{
-				StartMarker: []string{"START_PRINT"},
-				EndMarker:   "END_PRINT",
+				EndInitSection:  []string{"START_PRINT"},
+				EndPrintSection: "END_PRINT",
 			},
 			expected: []string{
 				"HEADER1 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",
@@ -975,8 +975,8 @@ M625`,
 
 			// Create processor with test markers
 			markers := PositionMarkers{
-				StartMarker: []string{"M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"},
-				EndMarker:   "M625",
+				EndInitSection:  []string{"M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"},
+				EndPrintSection: "M625",
 			}
 			processor := NewStreamingProcessor(types.ProcessingRequest{Iterations: 1}, markers)
 
