@@ -506,6 +506,7 @@ func (p *StreamingProcessor) generateIterationCode(printer string, iteration int
 		res := []string{
 			"======================================================================",
 			fmt.Sprintf("; Generated code for A1 mini - Iteration %d", iteration),
+			"G1 E-0.8",
 		}
 		if p.config.WaitTemp > 0 {
 			res = append(res, fmt.Sprintf("M190 R%d ; Set wait bed temperature", p.config.WaitTemp))
@@ -518,6 +519,8 @@ func (p *StreamingProcessor) generateIterationCode(printer string, iteration int
 		z := max(p.positions.LastPrintZ-50, 0.5)
 		res = append(res, fmt.Sprintf("G1 Z%.2f ; Move to Z position", z))
 		res = append(res, fmt.Sprintf("G1 Y0; Push printed item"))
+		res = append(res, fmt.Sprintf("G1 E0.8"))
+		res = append(res, fmt.Sprintf("G1 E%f", p.config.ExtraExtrude))
 		res = append(res, "======================================================================")
 		return res, nil
 	}

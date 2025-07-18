@@ -111,6 +111,11 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingReq
 	if (err != nil || req.WaitMin < 0) && waitMinS != "" {
 		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
 	}
+	extraExtrudeS := r.FormValue("extra_extrude")
+	req.ExtraExtrude, err = strconv.ParseFloat(extraExtrudeS, 64)
+	if (err != nil || req.ExtraExtrude < 0) && extraExtrudeS != "" {
+		return req, fmt.Errorf("invalid extra_extrude value %v: %w", waitMinS, err)
+	}
 	req.Printer = r.FormValue("printer")
 
 	file, header, err := r.FormFile("file")

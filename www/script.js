@@ -123,7 +123,8 @@ function handleFormSubmit(event) {
         { checkboxId: 'printer_checkbox', inputId: 'printer', name: 'printer' },
         { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
         { checkboxId: 'wait_temp_checkbox', inputId: 'wait_temp', name: 'wait_temp' },
-        { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' }
+        { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
+        { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' }
     ];
 
     checkboxConfigs.forEach(config => {

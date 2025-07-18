@@ -55,9 +55,9 @@
             </div>
 
             <div class="form-group">
-                <input type="checkbox" id="wait_temp_checkbox" class="form-checkbox" checked>
+                <input type="checkbox" id="wait_temp_checkbox" class="form-checkbox">
                 <label for="wait_temp_checkbox">
-                    Wait bed cool down temperature:
+                    Wait bed cool down temperature (unsupported):
                 </label>
                 <input type="number" id="wait_temp" name="wait_temp" min="20" max="80" value="40" required>
                 <span class="input-unit">°C</span>
@@ -70,6 +70,15 @@
                 </label>
                 <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
                 <span class="input-unit">minutes</span>
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="extra_extrude_checkbox" class="form-checkbox" checked>
+                <label for="extra_extrude_checkbox">
+                    Extra extrude before print next item:
+                </label>
+                <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
+                <span class="input-unit">mm</span>
             </div>
         </div>
 
