@@ -9,7 +9,6 @@
 <body>
 <div class="container">
     <h1>Continuous loop 3D printing</h1>
-
     <div class="info">
         <p><b>Information:</b> upload a G-code file and configure processing parameters for continuous loop 3D printing.</p>
     </div>
@@ -29,12 +28,9 @@
 
         <div class="form-section">
             <h3 class="section-title">Printer Selection</h3>
-
             <div class="form-group">
                 <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
-                <label for="printer_checkbox">
-                    Select printer:
-                </label>
+                <label for="printer_checkbox">Select printer:</label>
                 <select id="printer" name="printer" class="form-select" required>
                     <option value="A1 mini">A1 mini</option>
                 </select>
@@ -44,39 +40,27 @@
 
         <div class="form-section">
             <h3 class="section-title">Processing Parameters</h3>
-
             <div class="form-group">
                 <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
-                <label for="iterations_checkbox">
-                    Iteration number:
-                </label>
+                <label for="iterations_checkbox">Iteration number:</label>
                 <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
                 <span class="input-unit">cycles</span>
             </div>
-
             <div class="form-group">
                 <input type="checkbox" id="wait_temp_checkbox" class="form-checkbox">
-                <label for="wait_temp_checkbox">
-                    Wait bed cool down temperature (unsupported):
-                </label>
+                <label for="wait_temp_checkbox">Wait bed cool down temperature (unsupported):</label>
                 <input type="number" id="wait_temp" name="wait_temp" min="20" max="80" value="40" required>
                 <span class="input-unit">°C</span>
             </div>
-
             <div class="form-group">
                 <input type="checkbox" id="wait_min_checkbox" class="form-checkbox" checked>
-                <label for="wait_min_checkbox">
-                    Additional wait time:
-                </label>
+                <label for="wait_min_checkbox">Additional wait time:</label>
                 <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
                 <span class="input-unit">minutes</span>
             </div>
-
             <div class="form-group">
                 <input type="checkbox" id="extra_extrude_checkbox" class="form-checkbox" checked>
-                <label for="extra_extrude_checkbox">
-                    Extra extrude before print next item:
-                </label>
+                <label for="extra_extrude_checkbox">Extra extrude before print next item:</label>
                 <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
                 <span class="input-unit">mm</span>
             </div>

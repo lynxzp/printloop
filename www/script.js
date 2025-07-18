@@ -1,5 +1,3 @@
-// File Processing Service - Client Side JavaScript
-
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
@@ -80,7 +78,7 @@ function setupSelectValidation() {
                 setTimeout(() => {
                     this.style.borderColor = '#e9ecef';
                     this.style.boxShadow = 'none';
-                }, 1000);
+                }, 800);
             }
         });
 
@@ -274,7 +272,7 @@ function showError(message) {
     errorDiv.className = 'error-notification fade-in';
     errorDiv.innerHTML = `
         <strong>Error:</strong> ${message}
-        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 0; margin-left: 15px;">&times;</button>
+        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 0; margin-left: 12px;">&times;</button>
     `;
 
     const container = document.querySelector('.container');
@@ -284,10 +282,10 @@ function showError(message) {
     setTimeout(() => {
         if (errorDiv.parentElement) {
             errorDiv.style.opacity = '0';
-            errorDiv.style.transform = 'translateY(-20px)';
-            setTimeout(() => errorDiv.remove(), 300);
+            errorDiv.style.transform = 'translateY(-15px)';
+            setTimeout(() => errorDiv.remove(), 250);
         }
-    }, 5000);
+    }, 4000);
 }
 
 function resetSubmitButton() {
@@ -307,7 +305,7 @@ function showSuccess(message) {
     successDiv.className = 'success-notification fade-in';
     successDiv.innerHTML = `
         <strong>Success:</strong> ${message}
-        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; padding: 0; margin-left: 15px;">&times;</button>
+        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 0; margin-left: 12px;">&times;</button>
     `;
 
     const container = document.querySelector('.container');
@@ -317,10 +315,10 @@ function showSuccess(message) {
     setTimeout(() => {
         if (successDiv.parentElement) {
             successDiv.style.opacity = '0';
-            successDiv.style.transform = 'translateY(-20px)';
-            setTimeout(() => successDiv.remove(), 300);
+            successDiv.style.transform = 'translateY(-15px)';
+            setTimeout(() => successDiv.remove(), 250);
         }
-    }, 5000);
+    }, 4000);
 }
 
 // Enhanced keyboard shortcuts

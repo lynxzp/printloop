@@ -1,4 +1,3 @@
-/* General Styles */
 * {
     margin: 0;
     padding: 0;
@@ -7,28 +6,28 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
+    line-height: 1.4;
     color: #333;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    padding: 20px;
+    padding: 15px;
 }
 
 .container {
     max-width: 900px;
     margin: 0 auto;
     background: white;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(10px);
 }
 
 h1 {
     text-align: center;
     color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 2.8rem;
+    margin-bottom: 8px;
+    font-size: 2.2rem;
     font-weight: 300;
     background: linear-gradient(135deg, #667eea, #764ba2);
     -webkit-background-clip: text;
@@ -38,17 +37,18 @@ h1 {
 
 .info {
     color: #333;
-    padding: 20px 0;
-    margin-bottom: 35px;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
 }
 
 /* Enhanced Upload Area */
 .upload-area {
     border: 3px dashed #667eea;
-    border-radius: 20px;
-    padding: 50px 30px;
+    border-radius: 15px;
+    padding: 30px 20px;
     text-align: center;
-    margin-bottom: 35px;
+    margin-bottom: 20px;
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
@@ -70,8 +70,8 @@ h1 {
 .upload-area.dragover {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
     border-color: #764ba2;
-    transform: scale(1.02) translateY(-5px);
-    box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+    transform: scale(1.02) translateY(-3px);
+    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
 }
 
 .upload-content {
@@ -80,9 +80,9 @@ h1 {
 }
 
 .upload-icon {
-    font-size: 4rem;
+    font-size: 3rem;
     color: #667eea;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     display: block;
     animation: float 3s ease-in-out infinite;
 }
@@ -90,14 +90,14 @@ h1 {
 .upload-area p {
     color: #667eea;
     font-weight: 600;
-    font-size: 1.2rem;
-    margin-bottom: 15px;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
 }
 
 .upload-subtext {
     color: #8e9aaf;
-    font-size: 0.95rem;
-    margin-bottom: 20px;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
 }
 
 /* Hidden file input */
@@ -112,38 +112,38 @@ h1 {
 .browse-button {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    padding: 12px 30px;
+    padding: 10px 25px;
     border: none;
-    border-radius: 30px;
-    font-size: 1rem;
+    border-radius: 25px;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     position: relative;
     z-index: 2;
 }
 
 .browse-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 /* Form Styles */
 .form-section {
-    background: #f8f9fce;
-    padding: 30px;
-    border-radius: 15px;
-    margin-bottom: 30px;
+    background: #f8f9fc;
+    padding: 5px 20px 0 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
     border: 1px solid #e9ecef;
 }
 
 .section-title {
     color: #2c3e50;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    margin-bottom: 25px;
-    padding-bottom: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
     border-bottom: 2px solid #e9ecef;
     position: relative;
 }
@@ -153,26 +153,27 @@ h1 {
     position: absolute;
     bottom: -2px;
     left: 0;
-    width: 60px;
+    width: 50px;
     height: 2px;
     background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .form-group {
-    margin-bottom: 25px;
+    margin-bottom: 10px;
+    margin-top: 10px;
     display: grid;
     grid-template-columns: auto 4fr 1fr 1fr;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 /* Checkbox Styles */
 .form-checkbox {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     accent-color: #667eea;
     cursor: pointer;
-    transform: scale(1.2);
+    transform: scale(1.1);
 }
 
 .form-checkbox:checked {
@@ -182,7 +183,7 @@ h1 {
 label {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 1rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -190,10 +191,10 @@ label {
 }
 
 input[type="number"] {
-    padding: 12px 15px;
+    padding: 10px 12px;
     border: 2px solid #e9ecef;
-    border-radius: 12px;
-    font-size: 1rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
     background: white;
     font-family: inherit;
@@ -209,10 +210,10 @@ input[type="number"]:focus {
 
 /* Select Dropdown Styles */
 .form-select {
-    padding: 12px 15px;
+    padding: 10px 12px;
     border: 2px solid #e9ecef;
-    border-radius: 12px;
-    font-size: 1rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
     background: white;
     font-family: inherit;
@@ -221,9 +222,9 @@ input[type="number"]:focus {
     appearance: none;
     background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23667eea" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
     background-repeat: no-repeat;
-    background-position: right 15px center;
-    background-size: 12px;
-    padding-right: 40px;
+    background-position: right 12px center;
+    background-size: 10px;
+    padding-right: 35px;
 }
 
 .form-select:focus {
@@ -238,7 +239,7 @@ input[type="number"]:focus {
 }
 
 .form-select option {
-    padding: 10px;
+    padding: 8px;
     background: white;
     color: #2c3e50;
     font-weight: 500;
@@ -247,26 +248,26 @@ input[type="number"]:focus {
 .input-unit {
     color: #6c757d;
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     background: #f8f9fa;
-    padding: 12px 8px;
-    border-radius: 12px;
+    padding: 10px 6px;
+    border-radius: 10px;
     border: 2px solid #e9ecef;
-    min-width: 50px;
+    min-width: 45px;
     text-align: center;
 }
 
 /* File Info Enhanced */
 .file-info {
-    margin-top: 20px;
-    padding: 20px;
+    margin-top: 15px;
+    padding: 15px;
     background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
-    border-radius: 12px;
+    border-radius: 10px;
     border-left: 4px solid #00b894;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #2d3436;
     display: none;
-    box-shadow: 0 5px 15px rgba(0, 184, 148, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 184, 148, 0.1);
 }
 
 .file-info strong {
@@ -276,23 +277,23 @@ input[type="number"]:focus {
 /* Button Styles Enhanced */
 .form-actions {
     text-align: center;
-    margin-top: 40px;
+    margin-top: 25px;
 }
 
 #submitBtn {
     background: linear-gradient(135deg, #00b894, #00a085);
     color: white;
-    padding: 18px 40px;
+    padding: 15px 35px;
     border: none;
-    border-radius: 50px;
-    font-size: 1.2rem;
+    border-radius: 40px;
+    font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 250px;
+    min-width: 220px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 184, 148, 0.3);
+    box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3);
 }
 
 #submitBtn::before {
@@ -312,7 +313,7 @@ input[type="number"]:focus {
 
 #submitBtn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(0, 184, 148, 0.4);
+    box-shadow: 0 12px 35px rgba(0, 184, 148, 0.4);
 }
 
 #submitBtn:active {
@@ -323,7 +324,7 @@ input[type="number"]:focus {
     background: linear-gradient(135deg, #95a5a6, #7f8c8d);
     cursor: not-allowed;
     transform: none;
-    box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
 }
 
 .loading {
@@ -333,9 +334,9 @@ input[type="number"]:focus {
 /* Success/Error Notifications Enhanced */
 .error-notification,
 .success-notification {
-    padding: 20px 25px;
-    margin-bottom: 25px;
-    border-radius: 15px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
     font-weight: 500;
     position: relative;
     overflow: hidden;
@@ -345,65 +346,66 @@ input[type="number"]:focus {
 .error-notification {
     background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.95));
     color: white;
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
-    border-left: 5px solid #e74c3c;
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+    border-left: 4px solid #e74c3c;
 }
 
 .success-notification {
     background: linear-gradient(135deg, rgba(0, 184, 148, 0.95), rgba(0, 160, 133, 0.95));
     color: white;
-    box-shadow: 0 8px 25px rgba(0, 184, 148, 0.3);
-    border-left: 5px solid #00b894;
+    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.3);
+    border-left: 4px solid #00b894;
 }
 
 /* Responsive Design Enhanced */
 @media (max-width: 768px) {
     .container {
-        padding: 25px;
-        margin: 10px;
+        padding: 20px;
+        margin: 8px;
     }
 
     h1 {
-        font-size: 2.2rem;
+        font-size: 2rem;
     }
 
     .form-group {
-        grid-template-columns: auto 1fr 90px 60px;
-        gap: 10px;
+        grid-template-columns: auto 1fr 80px 55px;
+        gap: 8px;
     }
 
     input[type="number"], .form-select {
-        width: 90px;
+        width: 80px;
+        padding: 8px 10px;
     }
 
     .input-unit {
-        min-width: 45px;
-        padding: 12px 6px;
-        font-size: 0.8rem;
+        min-width: 40px;
+        padding: 8px 4px;
+        font-size: 0.75rem;
     }
 
     .upload-area {
-        padding: 40px 20px;
+        padding: 25px 15px;
     }
 
     .upload-icon {
-        font-size: 3rem;
+        font-size: 2.5rem;
     }
 
     #submitBtn {
         width: 100%;
-        padding: 18px;
+        padding: 15px;
     }
 
     .form-section {
-        padding: 20px;
+        padding: 15px;
     }
 }
 
 @media (max-width: 480px) {
     .form-group {
         grid-template-columns: 1fr;
-        gap: 8px;
+        gap: 6px;
         text-align: left;
     }
 
@@ -412,16 +414,16 @@ input[type="number"]:focus {
     }
 
     .upload-area p {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .browse-button {
-        padding: 10px 25px;
-        font-size: 0.95rem;
+        padding: 8px 20px;
+        font-size: 0.9rem;
     }
 
     input[type="number"], .form-select {
-        width: 90px;
+        width: 80px;
     }
 }
 
@@ -429,7 +431,7 @@ input[type="number"]:focus {
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -442,7 +444,7 @@ input[type="number"]:focus {
         transform: translateY(0px);
     }
     50% {
-        transform: translateY(-10px);
+        transform: translateY(-8px);
     }
 }
 
@@ -456,7 +458,7 @@ input[type="number"]:focus {
 }
 
 .fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Loading Animation Enhanced */
@@ -467,15 +469,15 @@ input[type="number"]:focus {
 
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    50% { transform: scale(1.03); }
 }
 
 .loading::before {
     content: "⚙️";
     display: inline-block;
     animation: spin 1.5s linear infinite;
-    margin-right: 10px;
-    font-size: 1.2rem;
+    margin-right: 8px;
+    font-size: 1.1rem;
 }
 
 #submitBtn:disabled {
