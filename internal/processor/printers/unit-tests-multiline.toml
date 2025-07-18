@@ -3,7 +3,7 @@ name = "multiline test"
 
 [markers]
 endInitSection = ["START_PRINT_LINE1", "START_PRINT_LINE2"]
-endPrintSection = "END_PRINT"
+endPrintSection = ["END_PRINT"]
 
 [searchStrategy]
 endInitSectionStrategy = "after_first_appear"

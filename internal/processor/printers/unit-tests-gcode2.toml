@@ -3,7 +3,7 @@ name = "coordinate test"
 
 [markers]
 endInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
-endPrintSection = "M625"
+endPrintSection = ["M625"]
 
 [searchStrategy]
 endInitSectionStrategy = "after_first_appear"

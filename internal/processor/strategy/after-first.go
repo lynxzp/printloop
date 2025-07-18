@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 // AfterFirstAppearStrategy finds the first appearance of markers
@@ -44,10 +43,10 @@ func (s *AfterFirstAppearStrategy) FindInitSectionPosition(filePath string, mark
 	return 0, 0, fmt.Errorf("start marker not found: %v", markers)
 }
 
-func (s *AfterFirstAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
+func (s *AfterFirstAppearStrategy) FindPrintSectionPosition(filePath string, markers []string, searchFromLine int64) (int64, int64, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer file.Close()
 
@@ -59,14 +58,29 @@ func (s *AfterFirstAppearStrategy) FindPrintSectionPosition(filePath string, mar
 		lineNum++
 	}
 
-	// Find first occurrence after searchFromLine
+	// Sliding window for multiline marker detection
+	window := make([]string, 0, len(markers)+10)
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
-			return lineNum, nil
+		window = append(window, line)
+
+		// Keep window size reasonable
+		maxWindowSize := len(markers) + 10
+		if len(window) > maxWindowSize {
+			window = window[1:] // Remove oldest line
 		}
+
+		// Calculate the correct window start line position for this iteration
+		currentWindowStart := lineNum - int64(len(window)) + 1
+
+		// Try to find marker pattern in current window
+		if matchPos := findStartMarkerInWindow(window, markers, currentWindowStart); matchPos != nil {
+			return matchPos.begin, matchPos.end, nil
+		}
+
 		lineNum++
 	}
 
-	return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
+	return 0, 0, fmt.Errorf("end marker not found after line %d: %v", searchFromLine, markers)
 }

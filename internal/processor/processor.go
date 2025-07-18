@@ -20,7 +20,7 @@ type PrinterDefinition struct {
 	Name    string `toml:"name"`
 	Markers struct {
 		EndInitSection  []string `toml:"endInitSection"`
-		EndPrintSection string   `toml:"endPrintSection"`
+		EndPrintSection []string `toml:"endPrintSection"` // Changed to []string
 	} `toml:"markers"`
 	SearchStrategy struct {
 		EndInitSectionStrategy  string `toml:"endInitSectionStrategy"`
@@ -41,7 +41,7 @@ type PositionMarkers struct {
 // SearchStrategy interface for different marker search strategies
 type SearchStrategy interface {
 	FindInitSectionPosition(filePath string, markers []string) (int64, int64, error)
-	FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error)
+	FindPrintSectionPosition(filePath string, markers []string, searchFromLine int64) (int64, int64, error)
 }
 
 // ProcessingRequest represents a file processing request
@@ -76,13 +76,15 @@ type StreamingProcessor struct {
 }
 
 // MarkerPositions represents the found positions of start and end markers
+// Updated MarkerPositions struct
 type MarkerPositions struct {
-	EndInitSectionFirstLine int64   // First line of start marker (0-based)
-	EndInitSectionLastLine  int64   // Last line of start marker (0-based)
-	EndPrintSection         int64   // Position of end marker (0-based)
-	LastPrintX              float64 // X coordinate from last print command (G1 with positive E)
-	LastPrintY              float64 // Y coordinate from last print command (G1 with positive E)
-	LastPrintZ              float64 // Z coordinate that was active during last print command
+	EndInitSectionFirstLine  int64   // First line of start marker (0-based)
+	EndInitSectionLastLine   int64   // Last line of start marker (0-based)
+	EndPrintSectionFirstLine int64   // First line of end marker (0-based) - NEW
+	EndPrintSectionLastLine  int64   // Last line of end marker (0-based) - UPDATED
+	LastPrintX               float64 // X coordinate from last print command (G1 with positive E)
+	LastPrintY               float64 // Y coordinate from last print command (G1 with positive E)
+	LastPrintZ               float64 // Z coordinate that was active during last print command
 }
 
 // GCodeCoordinates holds parsed G-code coordinates
@@ -208,15 +210,15 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 
 	// Pass 3: For each iteration, stream body + end marker + generated content
 	for i := int64(0); i < p.config.Iterations; i++ {
-		// Stream body (lines after EndInitSectionLastLine to before EndPrintSection)
-		if p.positions.EndInitSectionLastLine+1 < p.positions.EndPrintSection {
-			if err := p.streamLinesRange(inputPath, writer, p.positions.EndInitSectionLastLine+1, p.positions.EndPrintSection-1, false); err != nil {
+		// Stream body (lines after EndInitSectionLastLine to before EndPrintSectionFirstLine)
+		if p.positions.EndInitSectionLastLine+1 < p.positions.EndPrintSectionFirstLine {
+			if err := p.streamLinesRange(inputPath, writer, p.positions.EndInitSectionLastLine+1, p.positions.EndPrintSectionFirstLine-1, false); err != nil {
 				return fmt.Errorf("failed to stream body for iteration %d: %w", i+1, err)
 			}
 		}
 
-		// Stream end marker line
-		if err := p.streamLinesRange(inputPath, writer, p.positions.EndPrintSection, p.positions.EndPrintSection, false); err != nil {
+		// Stream end marker lines (can be multiline now)
+		if err := p.streamLinesRange(inputPath, writer, p.positions.EndPrintSectionFirstLine, p.positions.EndPrintSectionLastLine, false); err != nil {
 			return fmt.Errorf("failed to stream end marker for iteration %d: %w", i+1, err)
 		}
 
@@ -226,8 +228,8 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 		}
 	}
 
-	// Pass 4: Stream footer (lines after EndPrintSection to EOF)
-	if err := p.streamLinesFromPosition(inputPath, writer, p.positions.EndPrintSection+1); err != nil {
+	// Pass 4: Stream footer (lines after EndPrintSectionLastLine to EOF)
+	if err := p.streamLinesFromPosition(inputPath, writer, p.positions.EndPrintSectionLastLine+1); err != nil {
 		return fmt.Errorf("failed to stream footer: %w", err)
 	}
 
@@ -242,13 +244,13 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 		return nil, err
 	}
 
-	// Find print section position using strategy
-	printPos, err := p.printStrategy.FindPrintSectionPosition(filePath, p.printerDef.Markers.EndPrintSection, initLast)
+	// Find print section position using strategy - now returns begin,end
+	printFirst, printLast, err := p.printStrategy.FindPrintSectionPosition(filePath, p.printerDef.Markers.EndPrintSection, initLast)
 	if err != nil {
 		return nil, err
 	}
 
-	if initLast >= printPos {
+	if initLast >= printFirst {
 		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
 	}
 
@@ -259,12 +261,13 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 	}
 
 	positions := &MarkerPositions{
-		EndInitSectionFirstLine: initFirst,
-		EndInitSectionLastLine:  initLast,
-		EndPrintSection:         printPos,
-		LastPrintX:              lastPrintX,
-		LastPrintY:              lastPrintY,
-		LastPrintZ:              lastPrintZ,
+		EndInitSectionFirstLine:  initFirst,
+		EndInitSectionLastLine:   initLast,
+		EndPrintSectionFirstLine: printFirst,
+		EndPrintSectionLastLine:  printLast,
+		LastPrintX:               lastPrintX,
+		LastPrintY:               lastPrintY,
+		LastPrintZ:               lastPrintZ,
 	}
 
 	return positions, nil
@@ -505,7 +508,7 @@ func (p *StreamingProcessor) validateInput() error {
 		return errors.New("EndInitSection marker cannot be empty")
 	}
 
-	if strings.TrimSpace(p.printerDef.Markers.EndPrintSection) == "" {
+	if len(p.printerDef.Markers.EndPrintSection) == 0 {
 		return errors.New("EndPrintSection marker cannot be empty")
 	}
 
@@ -515,9 +518,11 @@ func (p *StreamingProcessor) validateInput() error {
 
 	// Check for marker conflicts
 	for _, startLine := range p.printerDef.Markers.EndInitSection {
-		if strings.Contains(startLine, p.printerDef.Markers.EndPrintSection) {
-			return fmt.Errorf("EndInitSection marker line '%s' contains EndPrintSection marker '%s'",
-				startLine, p.printerDef.Markers.EndPrintSection)
+		for _, endLine := range p.printerDef.Markers.EndPrintSection {
+			if strings.Contains(startLine, endLine) {
+				return fmt.Errorf("EndInitSection marker line '%s' contains EndPrintSection marker '%s'",
+					startLine, endLine)
+			}
 		}
 	}
 

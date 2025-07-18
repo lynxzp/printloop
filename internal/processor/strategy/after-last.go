@@ -1,3 +1,4 @@
+// file: internal/processor/strategy/after-last.go
 package strategy
 
 import (
@@ -52,34 +53,64 @@ func (s *AfterLastAppearStrategy) FindInitSectionPosition(filePath string, marke
 	return lastFoundBegin, lastFoundEnd, nil
 }
 
-func (s *AfterLastAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
+func (s *AfterLastAppearStrategy) FindPrintSectionPosition(filePath string, markers []string, searchFromLine int64) (int64, int64, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	lineNum := int64(0)
-	lastFoundPos := int64(-1)
+	lastFoundBegin := int64(-1)
+	lastFoundEnd := int64(-1)
 
 	// Skip to the search start position
 	for lineNum <= searchFromLine && scanner.Scan() {
 		lineNum++
 	}
 
-	// Find last occurrence after searchFromLine
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
-			lastFoundPos = lineNum
+	// For single line markers, use simple approach
+	if len(markers) == 1 {
+		marker := strings.TrimSpace(markers[0])
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.Contains(strings.TrimSpace(line), marker) {
+				lastFoundBegin = lineNum
+				lastFoundEnd = lineNum
+			}
+			lineNum++
 		}
-		lineNum++
+	} else {
+		// For multiline markers, use sliding window
+		window := make([]string, 0, len(markers)+10)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			window = append(window, line)
+
+			// Keep window size reasonable
+			maxWindowSize := len(markers) + 10
+			if len(window) > maxWindowSize {
+				window = window[1:] // Remove oldest line
+			}
+
+			// Calculate correct window start position
+			windowStart := lineNum - int64(len(window)) + 1
+
+			// Try to find marker pattern in current window
+			if matchPos := findStartMarkerInWindow(window, markers, windowStart); matchPos != nil {
+				lastFoundBegin = matchPos.begin
+				lastFoundEnd = matchPos.end
+			}
+
+			lineNum++
+		}
 	}
 
-	if lastFoundPos == -1 {
-		return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
+	if lastFoundBegin == -1 {
+		return 0, 0, fmt.Errorf("end marker not found after line %d: %v", searchFromLine, markers)
 	}
 
-	return lastFoundPos, nil
+	return lastFoundBegin, lastFoundEnd, nil
 }

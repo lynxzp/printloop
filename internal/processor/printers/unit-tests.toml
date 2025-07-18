@@ -2,7 +2,7 @@ name = "unit tests"
 
 [markers]
 endInitSection = ["START_PRINT"]
-endPrintSection = "END_PRINT"
+endPrintSection = ["END_PRINT"]
 
 [searchStrategy]
 endInitSectionStrategy = "after_first_appear"
