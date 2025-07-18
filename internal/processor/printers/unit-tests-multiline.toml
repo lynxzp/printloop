@@ -6,8 +6,8 @@ endInitSection = ["START_PRINT_LINE1", "START_PRINT_LINE2"]
 endPrintSection = "END_PRINT"
 
 [searchStrategy]
-endInitSectionStrategy = "first_appear"
-endPrintSectionStrategy = "last_appear"
+endInitSectionStrategy = "after_first_appear"
+endPrintSectionStrategy = "after_last_appear"
 
 [parameters]
 # No specific parameters for multiline tests

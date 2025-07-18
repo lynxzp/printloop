@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"printloop/internal/processor/strategy"
 	"regexp"
 	"strconv"
 	"strings"
@@ -53,154 +54,13 @@ type ProcessingRequest struct {
 	Printer      string
 }
 
-// FirstAppearStrategy finds the first appearance of markers
-type FirstAppearStrategy struct{}
-
-// LastAppearStrategy finds the last appearance of markers
-type LastAppearStrategy struct{}
-
-func (s *FirstAppearStrategy) FindInitSectionPosition(filePath string, markers []string) (int64, int64, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, 0, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-
-	// Sliding window for multiline marker detection
-	window := make([]string, 0, len(markers)+10)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		window = append(window, line)
-
-		// Keep window size reasonable
-		maxWindowSize := len(markers) + 10
-		if len(window) > maxWindowSize {
-			window = window[1:] // Remove oldest line
-		}
-
-		// Try to find start marker pattern in current window
-		if matchPos := findStartMarkerInWindow(window, markers, lineNum-int64(len(window))+1); matchPos != nil {
-			return matchPos.begin, matchPos.end, nil
-		}
-
-		lineNum++
-	}
-
-	return 0, 0, fmt.Errorf("start marker not found: %v", markers)
-}
-
-func (s *FirstAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-
-	// Skip to the search start position
-	for lineNum <= searchFromLine && scanner.Scan() {
-		lineNum++
-	}
-
-	// Find first occurrence after searchFromLine
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
-			return lineNum, nil
-		}
-		lineNum++
-	}
-
-	return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
-}
-
-func (s *LastAppearStrategy) FindInitSectionPosition(filePath string, markers []string) (int64, int64, error) {
-	// For init section, last appear means find the last occurrence of the complete pattern
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, 0, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-	lastFoundBegin := int64(-1)
-	lastFoundEnd := int64(-1)
-
-	// Sliding window for multiline marker detection
-	window := make([]string, 0, len(markers)+10)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		window = append(window, line)
-
-		// Keep window size reasonable
-		maxWindowSize := len(markers) + 10
-		if len(window) > maxWindowSize {
-			window = window[1:] // Remove oldest line
-		}
-
-		// Try to find start marker pattern in current window
-		if matchPos := findStartMarkerInWindow(window, markers, lineNum-int64(len(window))+1); matchPos != nil {
-			lastFoundBegin = matchPos.begin
-			lastFoundEnd = matchPos.end
-		}
-
-		lineNum++
-	}
-
-	if lastFoundBegin == -1 {
-		return 0, 0, fmt.Errorf("start marker not found: %v", markers)
-	}
-
-	return lastFoundBegin, lastFoundEnd, nil
-}
-
-func (s *LastAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-	lastFoundPos := int64(-1)
-
-	// Skip to the search start position
-	for lineNum <= searchFromLine && scanner.Scan() {
-		lineNum++
-	}
-
-	// Find last occurrence after searchFromLine
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
-			lastFoundPos = lineNum
-		}
-		lineNum++
-	}
-
-	if lastFoundPos == -1 {
-		return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
-	}
-
-	return lastFoundPos, nil
-}
-
 // Factory function to create search strategies
 func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
 	switch strategyName {
-	case "first_appear":
-		return &FirstAppearStrategy{}, nil
-	case "last_appear":
-		return &LastAppearStrategy{}, nil
+	case "after_first_appear":
+		return &strategy.AfterFirstAppearStrategy{}, nil
+	case "after_last_appear":
+		return &strategy.AfterLastAppearStrategy{}, nil
 	default:
 		return nil, fmt.Errorf("unknown search strategy: %s", strategyName)
 	}
@@ -231,11 +91,6 @@ type GCodeCoordinates struct {
 	Y *float64
 	Z *float64
 	E *float64
-}
-
-type startMarkerMatch struct {
-	begin int64
-	end   int64
 }
 
 func isValidPrinterName(name string) bool {
@@ -522,62 +377,6 @@ func (p *StreamingProcessor) parseGCodeLine(line string) *GCodeCoordinates {
 		return coords
 	}
 
-	return nil
-}
-
-// findStartMarkerInWindow searches for start marker pattern in the sliding window
-func findStartMarkerInWindow(window []string, markers []string, windowStartLine int64) *startMarkerMatch {
-	if len(markers) == 1 {
-		// Single line marker
-		for i, line := range window {
-			if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(markers[0])) {
-				pos := windowStartLine + int64(i)
-				return &startMarkerMatch{begin: pos, end: pos}
-			}
-		}
-		return nil
-	}
-
-	// Multiline marker search
-	for startIdx := 0; startIdx < len(window); startIdx++ {
-		if match := tryMatchMultilineStart(window, startIdx, windowStartLine, markers); match != nil {
-			return match
-		}
-	}
-	return nil
-}
-
-// tryMatchMultilineStart attempts to match multiline start marker from given position
-func tryMatchMultilineStart(window []string, startIdx int, windowStartLine int64, markers []string) *startMarkerMatch {
-	windowIdx := startIdx
-	markerIdx := 0
-	firstMarkerLine := int64(-1)
-	lastMarkerLine := int64(-1)
-
-	for markerIdx < len(markers) && windowIdx < len(window) {
-		cleanLine := strings.TrimSpace(window[windowIdx])
-		cleanMarker := strings.TrimSpace(markers[markerIdx])
-
-		if strings.Contains(cleanLine, cleanMarker) {
-			currentLine := windowStartLine + int64(windowIdx)
-			if firstMarkerLine == -1 {
-				firstMarkerLine = currentLine
-			}
-			lastMarkerLine = currentLine
-			markerIdx++
-			windowIdx++
-		} else if cleanLine == "" || strings.HasPrefix(cleanLine, ";") {
-			// Skip empty or comment lines
-			windowIdx++
-		} else {
-			// This line doesn't match and isn't skippable
-			return nil
-		}
-	}
-
-	if markerIdx == len(markers) {
-		return &startMarkerMatch{begin: firstMarkerLine, end: lastMarkerLine}
-	}
 	return nil
 }
 
