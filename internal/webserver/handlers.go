@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"printloop/internal/processor"
-	"printloop/internal/types"
 	"strconv"
 	"time"
 )
@@ -63,7 +62,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log.Info("Request processed", "filename", req.FileName)
 }
 
-func sendResponse(w http.ResponseWriter, req types.ProcessingRequest) error {
+func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", req.FileName))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	fileName := path.Join("files/results", req.FileName)
@@ -85,8 +84,8 @@ func sendResponse(w http.ResponseWriter, req types.ProcessingRequest) error {
 	return nil
 }
 
-func receiveRequest(w http.ResponseWriter, r *http.Request) (types.ProcessingRequest, error) {
-	var req types.ProcessingRequest
+func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.ProcessingRequest, error) {
+	var req processor.ProcessingRequest
 
 	const maxFileSize = 1024 * 1024 * 1024
 	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)

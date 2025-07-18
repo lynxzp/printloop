@@ -2,24 +2,217 @@ package processor
 
 import (
 	"bufio"
+	"embed"
 	"errors"
 	"fmt"
 	"os"
-	"printloop/internal/types"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
+
+	"github.com/BurntSushi/toml"
 )
 
+// PrinterDefinition represents the complete printer configuration from TOML file
+type PrinterDefinition struct {
+	Name    string `toml:"name"`
+	Markers struct {
+		EndInitSection  []string `toml:"endInitSection"`
+		EndPrintSection string   `toml:"endPrintSection"`
+	} `toml:"markers"`
+	SearchStrategy struct {
+		EndInitSectionStrategy  string `toml:"endInitSectionStrategy"`
+		EndPrintSectionStrategy string `toml:"endPrintSectionStrategy"`
+	} `toml:"searchStrategy"`
+	Parameters map[string]interface{} `toml:"parameters"`
+	Template   struct {
+		Code string `toml:"code"`
+	} `toml:"template"`
+}
+
+// PositionMarkers struct for backward compatibility
 type PositionMarkers struct {
-	EndInitSection  []string // For multiline markers, each element is a line
-	EndPrintSection string   // Keep single line for now
+	EndInitSection  []string
+	EndPrintSection string
+}
+
+// SearchStrategy interface for different marker search strategies
+type SearchStrategy interface {
+	FindInitSectionPosition(filePath string, markers []string) (int64, int64, error)
+	FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error)
+}
+
+// ProcessingRequest represents a file processing request
+type ProcessingRequest struct {
+	FileName     string
+	Iterations   int64
+	WaitTemp     int64
+	WaitMin      int64
+	ExtraExtrude float64
+	Printer      string
+}
+
+// FirstAppearStrategy finds the first appearance of markers
+type FirstAppearStrategy struct{}
+
+// LastAppearStrategy finds the last appearance of markers
+type LastAppearStrategy struct{}
+
+func (s *FirstAppearStrategy) FindInitSectionPosition(filePath string, markers []string) (int64, int64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+
+	// Sliding window for multiline marker detection
+	window := make([]string, 0, len(markers)+10)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		window = append(window, line)
+
+		// Keep window size reasonable
+		maxWindowSize := len(markers) + 10
+		if len(window) > maxWindowSize {
+			window = window[1:] // Remove oldest line
+		}
+
+		// Try to find start marker pattern in current window
+		if matchPos := findStartMarkerInWindow(window, markers, lineNum-int64(len(window))+1); matchPos != nil {
+			return matchPos.begin, matchPos.end, nil
+		}
+
+		lineNum++
+	}
+
+	return 0, 0, fmt.Errorf("start marker not found: %v", markers)
+}
+
+func (s *FirstAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+
+	// Skip to the search start position
+	for lineNum <= searchFromLine && scanner.Scan() {
+		lineNum++
+	}
+
+	// Find first occurrence after searchFromLine
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
+			return lineNum, nil
+		}
+		lineNum++
+	}
+
+	return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
+}
+
+func (s *LastAppearStrategy) FindInitSectionPosition(filePath string, markers []string) (int64, int64, error) {
+	// For init section, last appear means find the last occurrence of the complete pattern
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+	lastFoundBegin := int64(-1)
+	lastFoundEnd := int64(-1)
+
+	// Sliding window for multiline marker detection
+	window := make([]string, 0, len(markers)+10)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		window = append(window, line)
+
+		// Keep window size reasonable
+		maxWindowSize := len(markers) + 10
+		if len(window) > maxWindowSize {
+			window = window[1:] // Remove oldest line
+		}
+
+		// Try to find start marker pattern in current window
+		if matchPos := findStartMarkerInWindow(window, markers, lineNum-int64(len(window))+1); matchPos != nil {
+			lastFoundBegin = matchPos.begin
+			lastFoundEnd = matchPos.end
+		}
+
+		lineNum++
+	}
+
+	if lastFoundBegin == -1 {
+		return 0, 0, fmt.Errorf("start marker not found: %v", markers)
+	}
+
+	return lastFoundBegin, lastFoundEnd, nil
+}
+
+func (s *LastAppearStrategy) FindPrintSectionPosition(filePath string, marker string, searchFromLine int64) (int64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+	lastFoundPos := int64(-1)
+
+	// Skip to the search start position
+	for lineNum <= searchFromLine && scanner.Scan() {
+		lineNum++
+	}
+
+	// Find last occurrence after searchFromLine
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(marker)) {
+			lastFoundPos = lineNum
+		}
+		lineNum++
+	}
+
+	if lastFoundPos == -1 {
+		return 0, fmt.Errorf("end marker '%s' not found after line %d", marker, searchFromLine)
+	}
+
+	return lastFoundPos, nil
+}
+
+// Factory function to create search strategies
+func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
+	switch strategyName {
+	case "first_appear":
+		return &FirstAppearStrategy{}, nil
+	case "last_appear":
+		return &LastAppearStrategy{}, nil
+	default:
+		return nil, fmt.Errorf("unknown search strategy: %s", strategyName)
+	}
 }
 
 type StreamingProcessor struct {
-	config    types.ProcessingRequest
-	markers   PositionMarkers
-	positions MarkerPositions
+	config        ProcessingRequest
+	printerDef    PrinterDefinition
+	initStrategy  SearchStrategy
+	printStrategy SearchStrategy
+	template      *template.Template
+	positions     MarkerPositions
 }
 
 // MarkerPositions represents the found positions of start and end markers
@@ -40,11 +233,92 @@ type GCodeCoordinates struct {
 	E *float64
 }
 
-func NewStreamingProcessor(config types.ProcessingRequest, markers PositionMarkers) *StreamingProcessor {
-	return &StreamingProcessor{
-		config:  config,
-		markers: markers,
+type startMarkerMatch struct {
+	begin int64
+	end   int64
+}
+
+func isValidPrinterName(name string) bool {
+	if len(name) == 0 {
+		return false
 	}
+	for _, r := range name {
+		isLetter := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+		isDigit := r >= '0' && r <= '9'
+		isSpecial := r == '-'
+
+		if !(isLetter || isDigit || isSpecial) {
+			return false
+		}
+	}
+	return true
+}
+
+func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error) {
+	printerName := config.Printer
+	// Normalize printer name
+	printerName = strings.Replace(printerName, " ", "-", -1)
+	printerName = strings.ToLower(printerName)
+	// security validate printer name
+	if !isValidPrinterName(printerName) {
+		return nil, fmt.Errorf("invalid printer name: %s", printerName)
+	}
+
+	// Load printer definition from TOML file
+	printerDef, err := loadPrinterDefinition(printerName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load printer definition: %w", err)
+	}
+
+	// Create search strategies
+	initStrategy, err := CreateSearchStrategy(printerDef.SearchStrategy.EndInitSectionStrategy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create init section strategy: %w", err)
+	}
+
+	printStrategy, err := CreateSearchStrategy(printerDef.SearchStrategy.EndPrintSectionStrategy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create print section strategy: %w", err)
+	}
+
+	// Parse template
+	tmpl, err := template.New("printer").Funcs(template.FuncMap{
+		"add": func(a, b float64) float64 { return a + b },
+		"sub": func(a, b float64) float64 { return a - b },
+		"mul": func(a, b int) int { return a * b },
+		"max": func(a, b float64) float64 {
+			if a > b {
+				return a
+			}
+			return b
+		},
+	}).Parse(printerDef.Template.Code)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	return &StreamingProcessor{
+		config:        config,
+		printerDef:    *printerDef,
+		initStrategy:  initStrategy,
+		printStrategy: printStrategy,
+		template:      tmpl,
+	}, nil
+}
+
+//go:embed printers/*.toml
+var printerConfigs embed.FS
+
+func loadPrinterDefinition(printerName string) (*PrinterDefinition, error) {
+	filename := "printers/" + printerName + ".toml"
+	data, err := printerConfigs.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	var def PrinterDefinition
+	err = toml.Unmarshal(data, &def)
+	return &def, err
 }
 
 // ProcessFile processes a file using true streaming with multiple passes
@@ -105,31 +379,53 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	return nil
 }
 
-// findMarkerPositions uses multiple passes to find marker positions and extract G-code coordinates
+// findMarkerPositions uses strategies to find marker positions and extract G-code coordinates
 func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositions, error) {
-	file, err := os.Open(filePath)
+	// Find init section positions using strategy
+	initFirst, initLast, err := p.initStrategy.FindInitSectionPosition(filePath, p.printerDef.Markers.EndInitSection)
 	if err != nil {
 		return nil, err
+	}
+
+	// Find print section position using strategy
+	printPos, err := p.printStrategy.FindPrintSectionPosition(filePath, p.printerDef.Markers.EndPrintSection, initLast)
+	if err != nil {
+		return nil, err
+	}
+
+	if initLast >= printPos {
+		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
+	}
+
+	// Extract G-code coordinates
+	lastPrintX, lastPrintY, lastPrintZ, err := p.extractGCodeCoordinates(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	positions := &MarkerPositions{
+		EndInitSectionFirstLine: initFirst,
+		EndInitSectionLastLine:  initLast,
+		EndPrintSection:         printPos,
+		LastPrintX:              lastPrintX,
+		LastPrintY:              lastPrintY,
+		LastPrintZ:              lastPrintZ,
+	}
+
+	return positions, nil
+}
+
+// extractGCodeCoordinates scans file and extracts last print coordinates
+func (p *StreamingProcessor) extractGCodeCoordinates(filePath string) (float64, float64, float64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, 0, 0, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-
-	// Initialize result
-	positions := &MarkerPositions{
-		EndInitSectionFirstLine: -1,
-		EndInitSectionLastLine:  -1,
-		EndPrintSection:         -1,
-	}
-
-	// Tracking variables for G-code coordinates
 	var lastPrintX, lastPrintY, lastPrintZ *float64
-	var currentZ *float64 // Track current Z coordinate as we scan
-
-	// Sliding window for start marker detection
-	window := make([]string, 0, len(p.markers.EndInitSection)+10)
-	startMarkerFound := false
+	var currentZ *float64
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -156,62 +452,25 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 				}
 			}
 		}
-
-		// Start marker detection using sliding window
-		if !startMarkerFound {
-			window = append(window, line)
-
-			// Keep window size reasonable
-			maxWindowSize := len(p.markers.EndInitSection) + 10
-			if len(window) > maxWindowSize {
-				window = window[1:] // Remove oldest line
-			}
-
-			// Try to find start marker pattern in current window
-			if matchPos := p.findStartMarkerInWindow(window, lineNum-int64(len(window))+1); matchPos != nil {
-				positions.EndInitSectionFirstLine = matchPos.begin
-				positions.EndInitSectionLastLine = matchPos.end
-				startMarkerFound = true
-			}
-		}
-
-		// End marker detection (find LAST occurrence after start marker)
-		if startMarkerFound && strings.Contains(strings.TrimSpace(line), strings.TrimSpace(p.markers.EndPrintSection)) {
-			positions.EndPrintSection = lineNum
-		}
-
-		lineNum++
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return 0, 0, 0, err
 	}
 
-	// Validate that we found all required markers
-	if positions.EndInitSectionFirstLine == -1 {
-		return nil, fmt.Errorf("start marker not found: %v", p.markers.EndInitSection)
-	}
-
-	if positions.EndPrintSection == -1 {
-		return nil, fmt.Errorf("end marker '%s' not found after line %d", p.markers.EndPrintSection, positions.EndInitSectionLastLine)
-	}
-
-	if positions.EndInitSectionLastLine >= positions.EndPrintSection {
-		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
-	}
-
-	// Store the last coordinates found
+	// Return coordinates with defaults if not found
+	var x, y, z float64
 	if lastPrintX != nil {
-		positions.LastPrintX = *lastPrintX
+		x = *lastPrintX
 	}
 	if lastPrintY != nil {
-		positions.LastPrintY = *lastPrintY
+		y = *lastPrintY
 	}
 	if lastPrintZ != nil {
-		positions.LastPrintZ = *lastPrintZ
+		z = *lastPrintZ
 	}
 
-	return positions, nil
+	return x, y, z, nil
 }
 
 // parseGCodeLine parses a G-code line and extracts coordinates
@@ -266,52 +525,12 @@ func (p *StreamingProcessor) parseGCodeLine(line string) *GCodeCoordinates {
 	return nil
 }
 
-// findStartMarkerPositions finds multiline start marker using sliding window
-func (p *StreamingProcessor) findStartMarkerPositions(filePath string) (int64, int64, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, 0, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-
-	// Sliding window to match multiline patterns
-	window := make([]string, 0, len(p.markers.EndInitSection)+10) // Small buffer
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		window = append(window, line)
-
-		// Keep window size reasonable
-		maxWindowSize := len(p.markers.EndInitSection) + 10
-		if len(window) > maxWindowSize {
-			window = window[1:] // Remove oldest line
-		}
-
-		// Try to find start marker pattern in current window
-		if matchPos := p.findStartMarkerInWindow(window, lineNum-int64(len(window))+1); matchPos != nil {
-			return matchPos.begin, matchPos.end, nil
-		}
-
-		lineNum++
-	}
-
-	return 0, 0, fmt.Errorf("start marker not found: %v", p.markers.EndInitSection)
-}
-
-type startMarkerMatch struct {
-	begin int64
-	end   int64
-}
-
 // findStartMarkerInWindow searches for start marker pattern in the sliding window
-func (p *StreamingProcessor) findStartMarkerInWindow(window []string, windowStartLine int64) *startMarkerMatch {
-	if len(p.markers.EndInitSection) == 1 {
+func findStartMarkerInWindow(window []string, markers []string, windowStartLine int64) *startMarkerMatch {
+	if len(markers) == 1 {
 		// Single line marker
 		for i, line := range window {
-			if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(p.markers.EndInitSection[0])) {
+			if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(markers[0])) {
 				pos := windowStartLine + int64(i)
 				return &startMarkerMatch{begin: pos, end: pos}
 			}
@@ -321,7 +540,7 @@ func (p *StreamingProcessor) findStartMarkerInWindow(window []string, windowStar
 
 	// Multiline marker search
 	for startIdx := 0; startIdx < len(window); startIdx++ {
-		if match := p.tryMatchMultilineStart(window, startIdx, windowStartLine); match != nil {
+		if match := tryMatchMultilineStart(window, startIdx, windowStartLine, markers); match != nil {
 			return match
 		}
 	}
@@ -329,15 +548,15 @@ func (p *StreamingProcessor) findStartMarkerInWindow(window []string, windowStar
 }
 
 // tryMatchMultilineStart attempts to match multiline start marker from given position
-func (p *StreamingProcessor) tryMatchMultilineStart(window []string, startIdx int, windowStartLine int64) *startMarkerMatch {
+func tryMatchMultilineStart(window []string, startIdx int, windowStartLine int64, markers []string) *startMarkerMatch {
 	windowIdx := startIdx
 	markerIdx := 0
 	firstMarkerLine := int64(-1)
 	lastMarkerLine := int64(-1)
 
-	for markerIdx < len(p.markers.EndInitSection) && windowIdx < len(window) {
+	for markerIdx < len(markers) && windowIdx < len(window) {
 		cleanLine := strings.TrimSpace(window[windowIdx])
-		cleanMarker := strings.TrimSpace(p.markers.EndInitSection[markerIdx])
+		cleanMarker := strings.TrimSpace(markers[markerIdx])
 
 		if strings.Contains(cleanLine, cleanMarker) {
 			currentLine := windowStartLine + int64(windowIdx)
@@ -356,45 +575,10 @@ func (p *StreamingProcessor) tryMatchMultilineStart(window []string, startIdx in
 		}
 	}
 
-	if markerIdx == len(p.markers.EndInitSection) {
+	if markerIdx == len(markers) {
 		return &startMarkerMatch{begin: firstMarkerLine, end: lastMarkerLine}
 	}
 	return nil
-}
-
-// findLastEndMarkerPosition finds the LAST occurrence of end marker after start position
-func (p *StreamingProcessor) findLastEndMarkerPosition(filePath string, searchFromLine int64) (int64, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	// Skip to the search start position
-	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
-
-	// Skip lines until we reach searchFromLine + 1
-	for lineNum <= searchFromLine && scanner.Scan() {
-		lineNum++
-	}
-
-	lastEndMarkerPos := int64(-1)
-
-	// Continue scanning for end markers
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(strings.TrimSpace(line), strings.TrimSpace(p.markers.EndPrintSection)) {
-			lastEndMarkerPos = lineNum
-		}
-		lineNum++
-	}
-
-	if lastEndMarkerPos == -1 {
-		return 0, fmt.Errorf("end marker '%s' not found after line %d", p.markers.EndPrintSection, searchFromLine)
-	}
-
-	return lastEndMarkerPos, scanner.Err()
 }
 
 // streamLinesRange streams lines from startLine to endLine (inclusive) with marker splitting
@@ -418,7 +602,7 @@ func (p *StreamingProcessor) streamLinesRange(filePath string, writer *bufio.Wri
 		line := scanner.Text()
 
 		if processMarkerSplit {
-			splitLines := p.processLineWithMarkerSplit(line, p.markers.EndInitSection)
+			splitLines := p.processLineWithMarkerSplit(line, p.printerDef.Markers.EndInitSection)
 			for _, splitLine := range splitLines {
 				if _, err := fmt.Fprintln(writer, splitLine); err != nil {
 					return err
@@ -463,17 +647,39 @@ func (p *StreamingProcessor) streamLinesFromPosition(filePath string, writer *bu
 	return scanner.Err()
 }
 
-// streamGeneratedContent writes generated content for an iteration
+// streamGeneratedContent writes generated content for an iteration using template
 func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iteration int64) error {
-	lines, err := p.generateIterationCode(p.config.Printer, iteration)
-	if err != nil {
-		return fmt.Errorf("failed to generate iteration code: %w", err)
+	// Prepare template data
+	templateData := struct {
+		PrinterName string
+		Iteration   int64
+		Request     ProcessingRequest
+		Config      map[string]interface{}
+		Positions   MarkerPositions
+	}{
+		PrinterName: p.printerDef.Name,
+		Iteration:   iteration,
+		Request:     p.config,
+		Config:      p.printerDef.Parameters,
+		Positions:   p.positions,
 	}
+
+	// Execute template
+	var output strings.Builder
+	if err := p.template.Execute(&output, templateData); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	// Write generated content
+	lines := strings.Split(output.String(), "\n")
 	for _, line := range lines {
-		if _, err := fmt.Fprintln(writer, line); err != nil {
-			return err
+		if line != "" || len(lines) == 1 { // Don't write empty lines unless it's the only line
+			if _, err := fmt.Fprintln(writer, line); err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -495,44 +701,12 @@ func (p *StreamingProcessor) processLineWithMarkerSplit(line string, markers []s
 	return []string{line}
 }
 
-func (p *StreamingProcessor) generateIterationCode(printer string, iteration int64) ([]string, error) {
-	switch printer {
-	case "unit tests":
-		return []string{
-			fmt.Sprintf("; Generated code - Iteration %d", iteration),
-			fmt.Sprintf("; Generated code - End iteration %d", iteration),
-		}, nil
-	case "A1 mini":
-		res := []string{
-			"======================================================================",
-			fmt.Sprintf("; Generated code for A1 mini - Iteration %d", iteration),
-			"G1 E-0.8",
-		}
-		if p.config.WaitTemp > 0 {
-			res = append(res, fmt.Sprintf("M190 R%d ; Set wait bed temperature", p.config.WaitTemp))
-		}
-		if p.config.WaitMin > 0 {
-			res = append(res, fmt.Sprintf("G4 S%d ; Wait timeout", p.config.WaitMin*60))
-		}
-		res = append(res, fmt.Sprintf("G1 Y179.99 ; Move back"))
-		res = append(res, fmt.Sprintf("G1 X%.2f ; Move to last print X position", p.positions.LastPrintX))
-		z := max(p.positions.LastPrintZ-50, 0.5)
-		res = append(res, fmt.Sprintf("G1 Z%.2f ; Move to Z position", z))
-		res = append(res, fmt.Sprintf("G1 Y0; Push printed item"))
-		res = append(res, fmt.Sprintf("G1 E0.8"))
-		res = append(res, fmt.Sprintf("G1 E%f", p.config.ExtraExtrude))
-		res = append(res, "======================================================================")
-		return res, nil
-	}
-	return nil, errors.New("unsupported printer type: " + printer)
-}
-
 func (p *StreamingProcessor) validateInput() error {
-	if len(p.markers.EndInitSection) == 0 {
+	if len(p.printerDef.Markers.EndInitSection) == 0 {
 		return errors.New("EndInitSection marker cannot be empty")
 	}
 
-	if strings.TrimSpace(p.markers.EndPrintSection) == "" {
+	if strings.TrimSpace(p.printerDef.Markers.EndPrintSection) == "" {
 		return errors.New("EndPrintSection marker cannot be empty")
 	}
 
@@ -541,24 +715,22 @@ func (p *StreamingProcessor) validateInput() error {
 	}
 
 	// Check for marker conflicts
-	for _, startLine := range p.markers.EndInitSection {
-		if strings.Contains(startLine, p.markers.EndPrintSection) {
+	for _, startLine := range p.printerDef.Markers.EndInitSection {
+		if strings.Contains(startLine, p.printerDef.Markers.EndPrintSection) {
 			return fmt.Errorf("EndInitSection marker line '%s' contains EndPrintSection marker '%s'",
-				startLine, p.markers.EndPrintSection)
+				startLine, p.printerDef.Markers.EndPrintSection)
 		}
 	}
 
 	return nil
 }
 
-// ProcessFile processes a file using the true streaming processor
-func ProcessFile(inputPath, outputPath string, config types.ProcessingRequest) error {
-	// Create processor with default markers (these should be configurable)
-	markers := PositionMarkers{
-		EndInitSection:  []string{"M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"},
-		EndPrintSection: "M625",
+// ProcessFile processes a file using the true streaming processor with printer configuration
+func ProcessFile(inputPath, outputPath string, config ProcessingRequest) error {
+	processor, err := NewStreamingProcessor(config)
+	if err != nil {
+		return err
 	}
 
-	processor := NewStreamingProcessor(config, markers)
 	return processor.ProcessFile(inputPath, outputPath)
 }

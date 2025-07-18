@@ -1,0 +1,16 @@
+name = "unit tests"
+
+[markers]
+endInitSection = ["START_PRINT"]
+endPrintSection = "END_PRINT"
+
+[searchStrategy]
+endInitSectionStrategy = "first_appear"
+endPrintSectionStrategy = "last_appear"
+
+[parameters]
+# No specific parameters for unit tests
+
+[template]
+code = """; Generated code - Iteration {{.Iteration}}
+; Generated code - End iteration {{.Iteration}}"""

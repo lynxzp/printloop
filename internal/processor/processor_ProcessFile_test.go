@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
-	"printloop/internal/types"
 	"strings"
 	"testing"
 )
@@ -15,7 +14,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       []string
-		markers     PositionMarkers
+		printerName string
 		expected    []string
 		expectError bool
 	}{
@@ -30,10 +29,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER1",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START_PRINT"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER1",
 				"HEADER2",
@@ -60,10 +56,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START_PRINT"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT",
@@ -90,10 +83,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER1",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START_PRINT_LINE1", "START_PRINT_LINE2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit-tests-multiline",
 			expected: []string{
 				"HEADER1",
 				"HEADER2",
@@ -124,10 +114,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"G625",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"M1007 S1", "G1 X0 Y0", "G1 Z0.2"},
-				EndPrintSection: "G625",
-			},
+			printerName: "unit-tests-gcode",
 			expected: []string{
 				"HEADER",
 				"M1007 S1",
@@ -150,22 +137,17 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "multi end with multiline start",
 			input: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT",
 				"BODY",
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT",
 				"BODY",
@@ -185,24 +167,21 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "empty lines in multiline start marker",
 			input: []string{
 				"HEADER",
-				"START1",
+				"START_PRINT_LINE1",
 				" ",
-				"START2",
+				"START_PRINT_LINE2",
 				"BODY",
 				"END_PRINT",
 				"BODY",
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit-tests-multiline",
 			expected: []string{
 				"HEADER",
-				"START1",
+				"START_PRINT_LINE1",
 				" ",
-				"START2",
+				"START_PRINT_LINE2",
 				"BODY",
 				"END_PRINT",
 				"BODY",
@@ -222,24 +201,21 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "comment in multiline start marker",
 			input: []string{
 				"HEADER",
-				"START1",
+				"START_PRINT_LINE1",
 				"; This is a comment",
-				"START2",
+				"START_PRINT_LINE2",
 				"BODY",
 				"END_PRINT",
 				"BODY",
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit-tests-multiline",
 			expected: []string{
 				"HEADER",
-				"START1",
+				"START_PRINT_LINE1",
 				"; This is a comment",
-				"START2",
+				"START_PRINT_LINE2",
 				"BODY",
 				"END_PRINT",
 				"BODY",
@@ -259,22 +235,17 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "comment directly in line",
 			input: []string{
 				"HEADER",
-				"START1; This is a comment",
-				"START2",
+				"START_PRINT; This is a comment",
 				"BODY",
 				"END_PRINT",
 				"BODY",
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
-				"START1", "; This is a comment",
-				"START2",
+				"START_PRINT", "; This is a comment",
 				"BODY",
 				"END_PRINT",
 				"BODY",
@@ -294,22 +265,17 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "spaces in start marker",
 			input: []string{
 				"HEADER",
-				" START1 ",
-				"START2",
+				" START_PRINT ",
 				"BODY",
 				"END_PRINT",
 				"BODY",
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
-				" START1 ",
-				"START2",
+				" START_PRINT ",
 				"BODY",
 				"END_PRINT",
 				"BODY",
@@ -329,22 +295,17 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "spaces in end marker",
 			input: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT ",
 				"BODY",
 				" END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT ",
 				"BODY",
@@ -364,22 +325,17 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			name: "comments in end marker",
 			input: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT ; This is an end comment",
 				"BODY",
 				" END_PRINT ; Another end comment",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER",
-				"START1",
-				"START2",
+				"START_PRINT",
 				"BODY",
 				"END_PRINT ; This is an end comment",
 				"BODY",
@@ -396,30 +352,15 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			},
 		},
 		{
-			name:  "missing start marker - multiline",
-			input: []string{"HEADER", "START1", "BODY", "END_PRINT"},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			name:        "missing start marker - multiline",
+			input:       []string{"HEADER", "START_PRINT_LINE1", "BODY", "END_PRINT"},
+			printerName: "unit-tests-multiline",
 			expectError: true,
 		},
 		{
-			name:  "missing end marker",
-			input: []string{"HEADER", "START1", "START2", "BODY"},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
-			expectError: true,
-		},
-		{
-			name:  "empty start marker",
-			input: []string{"HEADER", "BODY", "END_PRINT"},
-			markers: PositionMarkers{
-				EndInitSection:  []string{},
-				EndPrintSection: "END_PRINT",
-			},
+			name:        "missing end marker",
+			input:       []string{"HEADER", "START_PRINT", "BODY"},
+			printerName: "unit tests",
 			expectError: true,
 		},
 		{
@@ -433,10 +374,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START1", "START2"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit-tests-multiline",
 			expectError: true,
 		},
 		{
@@ -450,10 +388,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER1",
 			},
-			markers: PositionMarkers{
-				EndInitSection:  []string{"START_PRINT"},
-				EndPrintSection: "END_PRINT",
-			},
+			printerName: "unit tests",
 			expected: []string{
 				"HEADER1 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",
 				"HEADER2",
@@ -485,15 +420,22 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				t.Fatalf("Failed to write input file: %v", err)
 			}
 
-			// Create processor with test markers
-			config := types.ProcessingRequest{
+			// Create processor with test configuration
+			config := ProcessingRequest{
 				Iterations: 2, // Based on expected outputs showing 2 iterations
-				Printer:    "unit tests",
+				Printer:    tt.printerName,
 			}
-			processor := NewStreamingProcessor(config, tt.markers)
+			processor, err := NewStreamingProcessor(config)
+			if err != nil {
+				if tt.expectError {
+					// If we expect an error and got one during processor creation, that's also valid
+					return
+				}
+				t.Fatalf("Failed to create processor: %v", err)
+			}
 
 			// Process the file
-			err := processor.ProcessFile(inputPath, outputPath)
+			err = processor.ProcessFile(inputPath, outputPath)
 
 			// Check error expectation
 			if tt.expectError {
@@ -578,7 +520,14 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 	floatPtr := func(f float64) *float64 { return &f }
 
 	// Create a processor instance for testing
-	p := &StreamingProcessor{}
+	config := ProcessingRequest{
+		Iterations: 1,
+		Printer:    "unit tests",
+	}
+	p, err := NewStreamingProcessor(config)
+	if err != nil {
+		t.Fatalf("Failed to create processor: %v", err)
+	}
 
 	tests := []struct {
 		name     string
@@ -973,12 +922,15 @@ M625`,
 			}
 			tmpFile.Close()
 
-			// Create processor with test markers
-			markers := PositionMarkers{
-				EndInitSection:  []string{"M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"},
-				EndPrintSection: "M625",
+			// Create processor with test configuration
+			config := ProcessingRequest{
+				Iterations: 1,
+				Printer:    "unit-tests-gcode2",
 			}
-			processor := NewStreamingProcessor(types.ProcessingRequest{Iterations: 1}, markers)
+			processor, err := NewStreamingProcessor(config)
+			if err != nil {
+				t.Fatalf("Failed to create processor: %v", err)
+			}
 
 			// Test the function
 			positions, err := processor.findMarkerPositions(tmpFile.Name())

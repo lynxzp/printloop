@@ -1,0 +1,17 @@
+# file: printers/multiline-test.toml
+name = "multiline test"
+
+[markers]
+endInitSection = ["START_PRINT_LINE1", "START_PRINT_LINE2"]
+endPrintSection = "END_PRINT"
+
+[searchStrategy]
+endInitSectionStrategy = "first_appear"
+endPrintSectionStrategy = "last_appear"
+
+[parameters]
+# No specific parameters for multiline tests
+
+[template]
+code = """; Generated code - Iteration {{.Iteration}}
+; Generated code - End iteration {{.Iteration}}"""

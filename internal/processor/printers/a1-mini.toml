@@ -1,0 +1,30 @@
+name = "A1 mini"
+
+[markers]
+endInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
+endPrintSection = "M625"
+
+[searchStrategy]
+endInitSectionStrategy = "first_appear"
+endPrintSectionStrategy = "last_appear"
+
+[parameters]
+retractDistance = 0.8
+minZOffset = 50.0
+minZ = 0.5
+pushY = 179.99
+returnY = 0
+
+[template]
+code = """======================================================================
+; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
+G1 E-{{.Config.RetractDistance}}
+{{if gt .Request.WaitTemp 0}}M190 R{{.Request.WaitTemp}} ; Set wait bed temperature{{end}}
+{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout{{end}}
+G1 Y{{.Config.PushY}} ; Move back
+G1 X{{printf "%.2f" .Positions.LastPrintX}} ; Move to last print X position
+G1 Z{{printf "%.2f" (max (sub .Positions.LastPrintZ .Config.MinZOffset) .Config.MinZ)}} ; Move to Z position
+G1 Y{{.Config.ReturnY}}; Push printed item
+G1 E{{.Config.RetractDistance}}
+G1 E{{.Request.ExtraExtrude}}
+======================================================================"""

@@ -1,0 +1,17 @@
+# file: printers/gcode-test.toml
+name = "gcode test"
+
+[markers]
+endInitSection = ["M1007 S1", "G1 X0 Y0", "G1 Z0.2"]
+endPrintSection = "G625"
+
+[searchStrategy]
+endInitSectionStrategy = "first_appear"
+endPrintSectionStrategy = "last_appear"
+
+[parameters]
+# No specific parameters for gcode tests
+
+[template]
+code = """; Generated code - Iteration {{.Iteration}}
+; Generated code - End iteration {{.Iteration}}"""

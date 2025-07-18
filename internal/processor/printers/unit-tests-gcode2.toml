@@ -1,0 +1,17 @@
+# file: printers/coordinate-test.toml
+name = "coordinate test"
+
+[markers]
+endInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
+endPrintSection = "M625"
+
+[searchStrategy]
+endInitSectionStrategy = "first_appear"
+endPrintSectionStrategy = "last_appear"
+
+[parameters]
+# No specific parameters for coordinate tests
+
+[template]
+code = """; Generated code - Iteration {{.Iteration}}
+; Generated code - End iteration {{.Iteration}}"""
