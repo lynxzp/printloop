@@ -1,17 +1,17 @@
 # file: printers/coordinate-test.toml
-name = "coordinate test"
+Name = "coordinate test"
 
-[markers]
-endInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
-endPrintSection = ["M625"]
+[Markers]
+EndInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
+EndPrintSection = ["M625"]
 
-[searchStrategy]
-endInitSectionStrategy = "after_first_appear"
-endPrintSectionStrategy = "after_last_appear"
+[SearchStrategy]
+EndInitSectionStrategy = "after_first_appear"
+EndPrintSectionStrategy = "after_last_appear"
 
-[parameters]
+[Parameters]
 # No specific parameters for coordinate tests
 
-[template]
-code = """; Generated code - Iteration {{.Iteration}}
+[Template]
+Code = """; Generated code - Iteration {{.Iteration}}
 ; Generated code - End iteration {{.Iteration}}"""

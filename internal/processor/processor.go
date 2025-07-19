@@ -17,19 +17,19 @@ import (
 
 // PrinterDefinition represents the complete printer configuration from TOML file
 type PrinterDefinition struct {
-	Name    string `toml:"name"`
+	Name    string
 	Markers struct {
-		EndInitSection  []string `toml:"endInitSection"`
-		EndPrintSection []string `toml:"endPrintSection"` // Changed to []string
-	} `toml:"markers"`
+		EndInitSection  []string
+		EndPrintSection []string
+	}
 	SearchStrategy struct {
-		EndInitSectionStrategy  string `toml:"endInitSectionStrategy"`
-		EndPrintSectionStrategy string `toml:"endPrintSectionStrategy"`
-	} `toml:"searchStrategy"`
-	Parameters map[string]interface{} `toml:"parameters"`
+		EndInitSectionStrategy  string
+		EndPrintSectionStrategy string
+	}
+	Parameters map[string]interface{}
 	Template   struct {
-		Code string `toml:"code"`
-	} `toml:"template"`
+		Code string
+	}
 }
 
 // PositionMarkers struct for backward compatibility
@@ -61,6 +61,8 @@ func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
 		return &strategy.AfterFirstAppearStrategy{}, nil
 	case "after_last_appear":
 		return &strategy.AfterLastAppearStrategy{}, nil
+	case "before_first_appear":
+		return &strategy.BeforeCommandStrategy{}, nil
 	default:
 		return nil, fmt.Errorf("unknown search strategy: %s", strategyName)
 	}

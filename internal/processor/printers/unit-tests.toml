@@ -1,16 +1,16 @@
-name = "unit tests"
+Name = "unit tests"
 
-[markers]
-endInitSection = ["START_PRINT"]
-endPrintSection = ["END_PRINT"]
+[Markers]
+EndInitSection = ["START_PRINT"]
+EndPrintSection = ["END_PRINT"]
 
-[searchStrategy]
-endInitSectionStrategy = "after_first_appear"
-endPrintSectionStrategy = "after_last_appear"
+[SearchStrategy]
+EndInitSectionStrategy = "after_first_appear"
+EndPrintSectionStrategy = "after_last_appear"
 
-[parameters]
+[Parameters]
 # No specific parameters for unit tests
 
-[template]
-code = """; Generated code - Iteration {{.Iteration}}
+[Template]
+Code = """; Generated code - Iteration {{.Iteration}}
 ; Generated code - End iteration {{.Iteration}}"""

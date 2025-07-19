@@ -1,30 +1,42 @@
-name = "A1 mini"
+Name = "A1 mini"
 
-[markers]
-endInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
-endPrintSection = ["M625"]
+[Markers]
+EndInitSection = ["M624"]
+EndPrintSection = ["M625"]
+# Markers requre to split gcode into sections:
+# - initialization section
+# - print section
+# - end section
+# Markers can have multiple lines
+# Multiline markers work only when all lines are found one after another
 
-[searchStrategy]
-endInitSectionStrategy = "after_first_appear"
-endPrintSectionStrategy = "after_last_appear"
+[SearchStrategy]
+EndInitSectionStrategy = "before_first_appear"
+EndPrintSectionStrategy = "after_last_appear"
+# Available strategies for searching markers that split gcode into sections:
+# - after_first_appear
+# - after_last_appear
+# - before_first_appear
 
-[parameters]
-retractDistance = 0.8
-minZOffset = 50.0
-minZ = 0.5
-pushY = 179.99
-returnY = 0
+[Parameters]
+RetractDistance = 0.8
+MoveDownBeforePush = 50.0
+MinZ = 0.5
+BackY = 179.99
+PushY = 0
 
-[template]
-code = """======================================================================
+[Template]
+Code = """
+======================================================================
 ; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
 G1 E-{{.Config.RetractDistance}}
 {{if gt .Request.WaitTemp 0}}M190 R{{.Request.WaitTemp}} ; Set wait bed temperature{{end}}
 {{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout{{end}}
-G1 Y{{.Config.PushY}} ; Move back
+G1 Y{{.Config.BackY}} ; Move back
 G1 X{{printf "%.2f" .Positions.LastPrintX}} ; Move to last print X position
-G1 Z{{printf "%.2f" (max (sub .Positions.LastPrintZ .Config.MinZOffset) .Config.MinZ)}} ; Move to Z position
-G1 Y{{.Config.ReturnY}}; Push printed item
+G1 Z{{printf "%.2f" (max (sub .Positions.LastPrintZ .Config.MoveDownBeforePush) .Config.MinZ)}} ; Move to Z position
+G1 Y{{.Config.PushY}}; Push printed item
 G1 E{{.Config.RetractDistance}}
 G1 E{{.Request.ExtraExtrude}}
-======================================================================"""
+======================================================================
+"""
