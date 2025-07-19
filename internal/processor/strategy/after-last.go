@@ -12,38 +12,42 @@ import (
 type AfterLastAppearStrategy struct{}
 
 func (s *AfterLastAppearStrategy) FindInitSectionPosition(filePath string, markers []string) (int64, int64, error) {
-	// For init section, last appear means find the last occurrence of the complete pattern
 	file, err := os.Open(filePath)
 	if err != nil {
 		return 0, 0, err
 	}
 	defer file.Close()
 
+	// Read all lines into memory for easier processing
+	var lines []string
 	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, 0, err
+	}
+
 	lastFoundBegin := int64(-1)
 	lastFoundEnd := int64(-1)
 
-	// Sliding window for multiline marker detection
-	window := make([]string, 0, len(markers)+10)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		window = append(window, line)
-
-		// Keep window size reasonable
-		maxWindowSize := len(markers) + 10
-		if len(window) > maxWindowSize {
-			window = window[1:] // Remove oldest line
+	if len(markers) == 1 {
+		// Single line marker - find last occurrence
+		marker := strings.TrimSpace(markers[0])
+		for i, line := range lines {
+			if strings.Contains(strings.TrimSpace(line), marker) {
+				lastFoundBegin = int64(i)
+				lastFoundEnd = int64(i)
+			}
 		}
-
-		// Try to find start marker pattern in current window
-		if matchPos := findStartMarkerInWindow(window, markers, lineNum-int64(len(window))+1); matchPos != nil {
-			lastFoundBegin = matchPos.begin
-			lastFoundEnd = matchPos.end
+	} else {
+		// Multiline marker - scan from each position and try to match the pattern
+		for startPos := 0; startPos <= len(lines)-len(markers); startPos++ {
+			if match := s.tryMatchMultilinePattern(lines, startPos, markers); match != nil {
+				lastFoundBegin = match.begin
+				lastFoundEnd = match.end
+			}
 		}
-
-		lineNum++
 	}
 
 	if lastFoundBegin == -1 {
@@ -60,51 +64,35 @@ func (s *AfterLastAppearStrategy) FindPrintSectionPosition(filePath string, mark
 	}
 	defer file.Close()
 
+	// Read all lines into memory for easier processing
+	var lines []string
 	scanner := bufio.NewScanner(file)
-	lineNum := int64(0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return 0, 0, err
+	}
+
 	lastFoundBegin := int64(-1)
 	lastFoundEnd := int64(-1)
 
-	// Skip to the search start position
-	for lineNum <= searchFromLine && scanner.Scan() {
-		lineNum++
-	}
-
-	// For single line markers, use simple approach
 	if len(markers) == 1 {
+		// Single line marker - find last occurrence after searchFromLine
 		marker := strings.TrimSpace(markers[0])
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.Contains(strings.TrimSpace(line), marker) {
-				lastFoundBegin = lineNum
-				lastFoundEnd = lineNum
+		for i := int(searchFromLine) + 1; i < len(lines); i++ {
+			if strings.Contains(strings.TrimSpace(lines[i]), marker) {
+				lastFoundBegin = int64(i)
+				lastFoundEnd = int64(i)
 			}
-			lineNum++
 		}
 	} else {
-		// For multiline markers, use sliding window
-		window := make([]string, 0, len(markers)+10)
-
-		for scanner.Scan() {
-			line := scanner.Text()
-			window = append(window, line)
-
-			// Keep window size reasonable
-			maxWindowSize := len(markers) + 10
-			if len(window) > maxWindowSize {
-				window = window[1:] // Remove oldest line
+		// Multiline marker - scan from searchFromLine+1 and try to match the pattern
+		for startPos := int(searchFromLine) + 1; startPos <= len(lines)-len(markers); startPos++ {
+			if match := s.tryMatchMultilinePattern(lines, startPos, markers); match != nil {
+				lastFoundBegin = match.begin
+				lastFoundEnd = match.end
 			}
-
-			// Calculate correct window start position
-			windowStart := lineNum - int64(len(window)) + 1
-
-			// Try to find marker pattern in current window
-			if matchPos := findStartMarkerInWindow(window, markers, windowStart); matchPos != nil {
-				lastFoundBegin = matchPos.begin
-				lastFoundEnd = matchPos.end
-			}
-
-			lineNum++
 		}
 	}
 
@@ -113,4 +101,34 @@ func (s *AfterLastAppearStrategy) FindPrintSectionPosition(filePath string, mark
 	}
 
 	return lastFoundBegin, lastFoundEnd, nil
+}
+
+// tryMatchMultilinePattern attempts to match multiline pattern starting from given position
+func (s *AfterLastAppearStrategy) tryMatchMultilinePattern(lines []string, startPos int, markers []string) *startMarkerMatch {
+	linePos := startPos
+	markerIdx := 0
+
+	for markerIdx < len(markers) && linePos < len(lines) {
+		cleanLine := strings.TrimSpace(lines[linePos])
+		cleanMarker := strings.TrimSpace(markers[markerIdx])
+
+		if strings.Contains(cleanLine, cleanMarker) {
+			markerIdx++
+			linePos++
+		} else if cleanLine == "" || strings.HasPrefix(cleanLine, ";") {
+			// Skip empty or comment lines
+			linePos++
+		} else {
+			// This line doesn't match and isn't skippable
+			return nil
+		}
+	}
+
+	if markerIdx == len(markers) {
+		return &startMarkerMatch{
+			begin: int64(startPos),
+			end:   int64(linePos - 1),
+		}
+	}
+	return nil
 }
