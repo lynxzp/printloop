@@ -84,6 +84,9 @@ type MarkerPositions struct {
 	EndInitSectionLastLine   int64   // Last line of start marker (0-based)
 	EndPrintSectionFirstLine int64   // First line of end marker (0-based) - NEW
 	EndPrintSectionLastLine  int64   // Last line of end marker (0-based) - UPDATED
+	FirstPrintX              float64 // X coordinate from first print command (G1 with positive E) after marker
+	FirstPrintY              float64 // Y coordinate from first print command (G1 with positive E) after marker
+	FirstPrintZ              float64 // Z coordinate that was active during first print command after marker
 	LastPrintX               float64 // X coordinate from last print command (G1 with positive E)
 	LastPrintY               float64 // Y coordinate from last print command (G1 with positive E)
 	LastPrintZ               float64 // Z coordinate that was active during last print command
@@ -257,7 +260,7 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 	}
 
 	// Extract G-code coordinates
-	lastPrintX, lastPrintY, lastPrintZ, err := p.extractGCodeCoordinates(filePath)
+	firstPrintX, firstPrintY, firstPrintZ, lastPrintX, lastPrintY, lastPrintZ, err := p.extractGCodeCoordinates(filePath, initLast)
 	if err != nil {
 		return nil, err
 	}
@@ -267,6 +270,9 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 		EndInitSectionLastLine:   initLast,
 		EndPrintSectionFirstLine: printFirst,
 		EndPrintSectionLastLine:  printLast,
+		FirstPrintX:              firstPrintX,
+		FirstPrintY:              firstPrintY,
+		FirstPrintZ:              firstPrintZ,
 		LastPrintX:               lastPrintX,
 		LastPrintY:               lastPrintY,
 		LastPrintZ:               lastPrintZ,
@@ -275,17 +281,20 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 	return positions, nil
 }
 
-// extractGCodeCoordinates scans file and extracts last print coordinates
-func (p *StreamingProcessor) extractGCodeCoordinates(filePath string) (float64, float64, float64, error) {
+// extractGCodeCoordinates scans file and extracts first and last print coordinates
+func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSectionLastLine int64) (float64, float64, float64, float64, float64, float64, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, err
 	}
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	var firstPrintX, firstPrintY, firstPrintZ *float64
 	var lastPrintX, lastPrintY, lastPrintZ *float64
 	var currentZ *float64
+	var firstPrintFound bool
+	lineNum := int64(0)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -297,9 +306,26 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string) (float64, 
 				currentZ = coords.Z
 			}
 
-			// Update last print coordinates (G1 with positive E)
-			if coords.E != nil && *coords.E > 0 {
-				// This is a print command - update print coordinates
+			// Update coordinates for print commands (G1 with positive E)
+			if coords.E != nil && *coords.E > 0 && (coords.X != nil || coords.Y != nil) {
+				// This is a print command
+
+				// Track first print coordinates after init section
+				if !firstPrintFound && lineNum > endInitSectionLastLine {
+					if coords.X != nil {
+						firstPrintX = coords.X
+					}
+					if coords.Y != nil {
+						firstPrintY = coords.Y
+					}
+					// Remember the Z that was active during this first print command
+					if currentZ != nil {
+						firstPrintZ = currentZ
+					}
+					firstPrintFound = true
+				}
+
+				// Always update last print coordinates
 				if coords.X != nil {
 					lastPrintX = coords.X
 				}
@@ -312,25 +338,40 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string) (float64, 
 				}
 			}
 		}
+
+		lineNum++
 	}
 
 	if err := scanner.Err(); err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, err
 	}
 
 	// Return coordinates with defaults if not found
-	var x, y, z float64
+	var fx, fy, fz, lx, ly, lz float64
+	if firstPrintX != nil {
+		fx = *firstPrintX
+	}
+	if firstPrintY != nil {
+		fy = *firstPrintY
+	}
+	if firstPrintZ != nil {
+		fz = *firstPrintZ
+	}
 	if lastPrintX != nil {
-		x = *lastPrintX
+		lx = *lastPrintX
 	}
 	if lastPrintY != nil {
-		y = *lastPrintY
+		ly = *lastPrintY
 	}
 	if lastPrintZ != nil {
-		z = *lastPrintZ
+		lz = *lastPrintZ
 	}
 
-	return x, y, z, nil
+	if !firstPrintFound {
+		return fx, fy, fz, lx, ly, lz, fmt.Errorf("no print commands found after end of init section at line %d", endInitSectionLastLine)
+	}
+
+	return fx, fy, fz, lx, ly, lz, nil
 }
 
 // parseGCodeLine parses a G-code line and extracts coordinates
