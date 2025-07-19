@@ -283,6 +283,9 @@ input[type="number"]:focus {
 .form-actions {
     text-align: center;
     margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 #submitBtn {
@@ -326,6 +329,54 @@ input[type="number"]:focus {
 }
 
 #submitBtn:disabled {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+}
+
+/* Custom Template Button - Red/Orange Styling */
+.custom-submit-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    padding: 15px 35px;
+    border: none;
+    border-radius: 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 220px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+}
+
+.custom-submit-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.custom-submit-btn:hover::before {
+    left: 100%;
+}
+
+.custom-submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(231, 76, 60, 0.4);
+}
+
+.custom-submit-btn:active {
+    transform: translateY(-1px);
+}
+
+.custom-submit-btn:disabled {
     background: linear-gradient(135deg, #95a5a6, #7f8c8d);
     cursor: not-allowed;
     transform: none;
@@ -397,7 +448,7 @@ input[type="number"]:focus {
         font-size: 2.5rem;
     }
 
-    #submitBtn {
+    #submitBtn, .custom-submit-btn {
         width: 100%;
         padding: 15px;
     }
@@ -485,6 +536,135 @@ input[type="number"]:focus {
     font-size: 1.1rem;
 }
 
-#submitBtn:disabled {
+#submitBtn:disabled, .custom-submit-btn:disabled {
     animation: pulse 2s ease-in-out infinite;
+}
+
+.template-button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    width: 100%;
+    font-family: inherit;
+    justify-self: stretch;
+}
+
+.template-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.template-button:disabled {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 6px rgba(149, 165, 166, 0.3);
+}
+
+/* Template Section Styles */
+.template-subtitle {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: normal;
+    margin-left: 10px;
+}
+
+.template-container {
+    position: relative;
+}
+
+.template-editor {
+    width: 100%;
+    min-height: 300px;
+    max-height: 500px;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-family: 'Courier New', Monaco, monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #2c3e50;
+    background: white;
+    resize: vertical;
+    transition: all 0.3s ease;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow-x: auto;
+    overflow-y: auto;
+    border-color: #00b894;
+    box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.1);
+}
+
+.template-editor:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.template-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-end;
+}
+
+.template-action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.template-action-btn.secondary {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    color: white;
+    box-shadow: 0 2px 8px rgba(149, 165, 166, 0.3);
+}
+
+.template-action-btn.secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .template-button {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    .template-editor {
+        min-height: 250px;
+        font-size: 0.8rem;
+        padding: 12px;
+    }
+
+    .template-actions {
+        justify-content: center;
+    }
+
+    .template-action-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .template-button {
+        width: 120px;
+        justify-self: start;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
 }

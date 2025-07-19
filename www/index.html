@@ -34,7 +34,19 @@
                 <select id="printer" name="printer" class="form-select" required>
                     <option value="A1 mini">A1 mini</option>
                 </select>
-                <span class="input-unit">&nbsp;</span>
+                <button type="button" id="showTemplateBtn" class="template-button">Show Template</button>
+            </div>
+
+            <div class="form-section" id="templateSection" style="display: none;">
+                <h3 class="section-title">
+                    Printer Template
+                </h3>
+                <div class="template-container">
+                    <textarea id="templateContent" class="template-editor" placeholder="Template will appear here..."></textarea>
+                    <div class="template-actions">
+                        <button type="button" id="hideTemplateBtn" class="template-action-btn secondary">Hide</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -70,6 +82,10 @@
             <button type="submit" id="submitBtn">
                 <span class="btn-text">Process & Download</span>
                 <span class="loading" id="loading" style="display: none;">Processing...</span>
+            </button>
+            <button type="button" id="submitCustomBtn" class="custom-submit-btn" style="display: none;">
+                <span class="btn-text">Process with Custom Template</span>
+                <span class="loading" id="customLoading" style="display: none;">Processing...</span>
             </button>
         </div>
     </form>

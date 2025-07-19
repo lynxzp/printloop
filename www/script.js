@@ -7,12 +7,20 @@ function initializeApp() {
     const fileInput = document.getElementById('file');
     const uploadArea = document.getElementById('uploadArea');
     const submitBtn = document.getElementById('submitBtn');
+    const customSubmitBtn = document.getElementById('submitCustomBtn');
     const loading = document.getElementById('loading');
     const btnText = document.querySelector('.btn-text');
+    const showTemplateBtn = document.getElementById('showTemplateBtn');
+    const hideTemplateBtn = document.getElementById('hideTemplateBtn');
 
     // Form submission handling
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
+    }
+
+    // Custom template button handling
+    if (customSubmitBtn) {
+        customSubmitBtn.addEventListener('click', handleCustomFormSubmit);
     }
 
     // File input change handling
@@ -23,6 +31,15 @@ function initializeApp() {
     // Drag and drop functionality
     if (uploadArea) {
         setupDragAndDrop(uploadArea, fileInput);
+    }
+
+    // Template button handling
+    if (showTemplateBtn) {
+        showTemplateBtn.addEventListener('click', showTemplate);
+    }
+
+    if (hideTemplateBtn) {
+        hideTemplateBtn.addEventListener('click', hideTemplate);
     }
 
     // Add fade-in animation to container
@@ -96,13 +113,36 @@ function setupSelectValidation() {
 
 function handleFormSubmit(event) {
     event.preventDefault();
+    submitForm(false); // false = use default template
+    return false;
+}
 
+function handleCustomFormSubmit(event) {
+    event.preventDefault();
+    submitForm(true); // true = use custom template
+    return false;
+}
+
+function submitForm(useCustomTemplate) {
     const submitBtn = document.getElementById('submitBtn');
+    const customSubmitBtn = document.getElementById('submitCustomBtn');
     const loading = document.getElementById('loading');
+    const customLoading = document.getElementById('customLoading');
     const btnText = document.querySelector('.btn-text');
+    const customBtnText = customSubmitBtn.querySelector('.btn-text');
 
+    // Disable both buttons and show appropriate loading state
     if (submitBtn && loading && btnText) {
         submitBtn.disabled = true;
+    }
+    if (customSubmitBtn && customLoading && customBtnText) {
+        customSubmitBtn.disabled = true;
+    }
+
+    if (useCustomTemplate) {
+        customBtnText.style.display = 'none';
+        customLoading.style.display = 'inline-block';
+    } else {
         btnText.style.display = 'none';
         loading.style.display = 'inline-block';
     }
@@ -114,6 +154,17 @@ function handleFormSubmit(event) {
     const fileInput = document.getElementById('file');
     if (fileInput.files[0]) {
         formData.append('file', fileInput.files[0]);
+    }
+
+    if (useCustomTemplate) {
+        const templateContent = document.getElementById('templateContent');
+        if (templateContent && templateContent.value.trim()) {
+            formData.append('custom_template', templateContent.value);
+        } else {
+            showError('Template content is empty. Please edit the template or use the standard processing button.');
+            resetSubmitButtons();
+            return;
+        }
     }
 
     // Add only enabled parameters
@@ -165,34 +216,17 @@ function handleFormSubmit(event) {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            showSuccess('🎉 File processed and downloaded successfully!');
-            resetSubmitButton();
-            resetForm();
+            const message = useCustomTemplate ?
+                'File processed with custom template and downloaded successfully!' :
+                'File processed and downloaded successfully!';
+            showSuccess(message);
+            resetSubmitButtons();
         })
         .catch(error => {
             console.error('Upload error:', error);
-            showError('❌ Error processing file: ' + error.message);
-            resetSubmitButton();
+            showError('Error processing file: ' + error.message);
+            resetSubmitButtons();
         });
-
-    return false;
-}
-
-function resetForm() {
-    const form = document.getElementById('uploadForm');
-    const fileInfo = document.getElementById('fileInfo');
-
-    if (form) {
-        // Reset only file input, keep parameter values
-        const fileInput = document.getElementById('file');
-        if (fileInput) {
-            fileInput.value = '';
-        }
-    }
-
-    if (fileInfo) {
-        fileInfo.style.display = 'none';
-    }
 }
 
 function handleFileSelect(event) {
@@ -288,15 +322,24 @@ function showError(message) {
     }, 4000);
 }
 
-function resetSubmitButton() {
+function resetSubmitButtons() {
     const submitBtn = document.getElementById('submitBtn');
+    const customSubmitBtn = document.getElementById('submitCustomBtn');
     const loading = document.getElementById('loading');
+    const customLoading = document.getElementById('customLoading');
     const btnText = document.querySelector('.btn-text');
+    const customBtnText = customSubmitBtn?.querySelector('.btn-text');
 
     if (submitBtn && loading && btnText) {
         submitBtn.disabled = false;
         btnText.style.display = 'inline';
         loading.style.display = 'none';
+    }
+
+    if (customSubmitBtn && customLoading && customBtnText) {
+        customSubmitBtn.disabled = false;
+        customBtnText.style.display = 'inline';
+        customLoading.style.display = 'none';
     }
 }
 
@@ -324,4 +367,76 @@ function showSuccess(message) {
 // Add smooth scrolling for mobile
 if ('scrollBehavior' in document.documentElement.style) {
     document.documentElement.style.scrollBehavior = 'smooth';
+}
+
+function showTemplate() {
+    const printerSelect = document.getElementById('printer');
+    const printerName = printerSelect.value;
+
+    if (!printerName) {
+        showError('Please select a printer first');
+        return;
+    }
+
+    // Show loading state
+    const showTemplateBtn = document.getElementById('showTemplateBtn');
+    const originalText = showTemplateBtn.textContent;
+    showTemplateBtn.textContent = 'Loading...';
+    showTemplateBtn.disabled = true;
+
+    fetch(`/template?printer=${encodeURIComponent(printerName)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to load template: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(template => {
+            const templateContent = document.getElementById('templateContent');
+            templateContent.value = template;
+            templateContent.readOnly = false;
+            templateContent.classList.add('editable');
+
+            document.getElementById('templateSection').style.display = 'block';
+
+            // Show custom template button
+            const customSubmitBtn = document.getElementById('submitCustomBtn');
+            if (customSubmitBtn) {
+                customSubmitBtn.style.display = 'block';
+            }
+
+            // Reset button
+            showTemplateBtn.textContent = originalText;
+            showTemplateBtn.disabled = false;
+
+            // Scroll to template section
+            document.getElementById('templateSection').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        })
+        .catch(error => {
+            console.error('Template error:', error);
+            showError('Failed to load template: ' + error.message);
+
+            // Reset button
+            showTemplateBtn.textContent = originalText;
+            showTemplateBtn.disabled = false;
+        });
+}
+
+function hideTemplate() {
+    const templateSection = document.getElementById('templateSection');
+    const templateContent = document.getElementById('templateContent');
+    const customSubmitBtn = document.getElementById('submitCustomBtn');
+
+    templateSection.style.display = 'none';
+    templateContent.value = '';
+    templateContent.readOnly = false;
+    templateContent.classList.remove('editable');
+
+    // Hide custom template button
+    if (customSubmitBtn) {
+        customSubmitBtn.style.display = 'none';
+    }
 }

@@ -46,12 +46,13 @@ type SearchStrategy interface {
 
 // ProcessingRequest represents a file processing request
 type ProcessingRequest struct {
-	FileName     string
-	Iterations   int64
-	WaitTemp     int64
-	WaitMin      int64
-	ExtraExtrude float64
-	Printer      string
+	FileName       string
+	Iterations     int64
+	WaitTemp       int64
+	WaitMin        int64
+	ExtraExtrude   float64
+	Printer        string
+	CustomTemplate string
 }
 
 // Factory function to create search strategies
@@ -117,19 +118,33 @@ func isValidPrinterName(name string) bool {
 }
 
 func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error) {
-	printerName := config.Printer
-	// Normalize printer name
-	printerName = strings.Replace(printerName, " ", "-", -1)
-	printerName = strings.ToLower(printerName)
-	// security validate printer name
-	if !isValidPrinterName(printerName) {
-		return nil, fmt.Errorf("invalid printer name: %s", printerName)
-	}
+	var printerDef *PrinterDefinition
+	var templateCode string
+	var err error
 
-	// Load printer definition from TOML file
-	printerDef, err := loadPrinterDefinition(printerName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load printer definition: %w", err)
+	// If custom template is provided, parse it
+	if config.CustomTemplate != "" {
+		printerDef, templateCode, err = parseCustomTemplate(config.CustomTemplate, config.Printer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse custom template: %w", err)
+		}
+	} else {
+		// Use default printer definition
+		printerName := config.Printer
+		// Normalize printer name
+		printerName = strings.Replace(printerName, " ", "-", -1)
+		printerName = strings.ToLower(printerName)
+		// security validate printer name
+		if !isValidPrinterName(printerName) {
+			return nil, fmt.Errorf("invalid printer name: %s", printerName)
+		}
+
+		// Load printer definition from TOML file
+		printerDef, err = loadPrinterDefinition(printerName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load printer definition: %w", err)
+		}
+		templateCode = printerDef.Template.Code
 	}
 
 	// Create search strategies
@@ -154,7 +169,7 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 			}
 			return b
 		},
-	}).Parse(printerDef.Template.Code)
+	}).Parse(templateCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -166,6 +181,42 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 		printStrategy: printStrategy,
 		template:      tmpl,
 	}, nil
+}
+
+// parseCustomTemplate parses a custom template in TOML format and extracts the template code
+func parseCustomTemplate(customTemplate string, printerName string) (*PrinterDefinition, string, error) {
+	var def PrinterDefinition
+	err := toml.Unmarshal([]byte(customTemplate), &def)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to parse custom template TOML: %w", err)
+	}
+
+	// Validate required fields
+	if len(def.Markers.EndInitSection) == 0 {
+		return nil, "", errors.New("custom template missing EndInitSection markers")
+	}
+	if len(def.Markers.EndPrintSection) == 0 {
+		return nil, "", errors.New("custom template missing EndPrintSection markers")
+	}
+	if def.SearchStrategy.EndInitSectionStrategy == "" {
+		return nil, "", errors.New("custom template missing EndInitSectionStrategy")
+	}
+	if def.SearchStrategy.EndPrintSectionStrategy == "" {
+		return nil, "", errors.New("custom template missing EndPrintSectionStrategy")
+	}
+	if def.Template.Code == "" {
+		return nil, "", errors.New("custom template missing Template.Code")
+	}
+
+	// Set name if not provided
+	if def.Name == "" {
+		def.Name = fmt.Sprintf("Custom-%s", printerName)
+	}
+
+	// Convert all numeric parameters to float64 for template compatibility
+	normalizeParameters(&def)
+
+	return &def, def.Template.Code, nil
 }
 
 //go:embed printers/*.toml
@@ -180,7 +231,36 @@ func loadPrinterDefinition(printerName string) (*PrinterDefinition, error) {
 
 	var def PrinterDefinition
 	err = toml.Unmarshal(data, &def)
+	if err != nil {
+		return &def, err
+	}
+
+	// Convert all numeric parameters to float64 for template compatibility
+	normalizeParameters(&def)
+
 	return &def, err
+}
+
+// normalizeParameters converts all numeric values in Parameters to float64 for template compatibility
+func normalizeParameters(def *PrinterDefinition) {
+	if def.Parameters == nil {
+		return
+	}
+
+	for key, value := range def.Parameters {
+		switch v := value.(type) {
+		case int:
+			def.Parameters[key] = float64(v)
+		case int32:
+			def.Parameters[key] = float64(v)
+		case int64:
+			def.Parameters[key] = float64(v)
+		case float32:
+			def.Parameters[key] = float64(v)
+			// float64 stays as is
+			// strings and other types stay as is
+		}
+	}
 }
 
 // ProcessFile processes a file using true streaming with multiple passes
@@ -580,4 +660,8 @@ func ProcessFile(inputPath, outputPath string, config ProcessingRequest) error {
 	}
 
 	return processor.ProcessFile(inputPath, outputPath)
+}
+
+func LoadPrinterDefinitionPublic(printerName string) (*PrinterDefinition, error) {
+	return loadPrinterDefinition(printerName)
 }

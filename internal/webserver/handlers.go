@@ -9,6 +9,7 @@ import (
 	"path"
 	"printloop/internal/processor"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -117,6 +118,12 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	}
 	req.Printer = r.FormValue("printer")
 
+	// Handle custom template if provided
+	customTemplate := r.FormValue("custom_template")
+	if customTemplate != "" {
+		req.CustomTemplate = strings.TrimSpace(customTemplate)
+	}
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		return req, fmt.Errorf("file retrieval error: %w", err)
@@ -139,4 +146,92 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 		return req, fmt.Errorf("file saving error: %w", err)
 	}
 	return req, nil
+}
+
+func TemplateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	printerName := r.URL.Query().Get("printer")
+	if printerName == "" {
+		http.Error(w, "Missing printer parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Normalize printer name (same logic as in processor)
+	printerName = strings.Replace(printerName, " ", "-", -1)
+	printerName = strings.ToLower(printerName)
+
+	// Load printer definition
+	printerDef, err := processor.LoadPrinterDefinitionPublic(printerName)
+	if err != nil {
+		http.Error(w, "Printer not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Convert the complete printer definition to TOML format with custom handling for multiline strings
+	var buf strings.Builder
+
+	// Write basic fields
+	fmt.Fprintf(&buf, "Name = %q\n\n", printerDef.Name)
+
+	// Write Markers section
+	buf.WriteString("[Markers]\n")
+	fmt.Fprintf(&buf, "EndInitSection = %v\n", formatStringSlice(printerDef.Markers.EndInitSection))
+	fmt.Fprintf(&buf, "EndPrintSection = %v\n", formatStringSlice(printerDef.Markers.EndPrintSection))
+	buf.WriteString("\n")
+
+	// Write SearchStrategy section
+	buf.WriteString("[SearchStrategy]\n")
+	fmt.Fprintf(&buf, "EndInitSectionStrategy = %q\n", printerDef.SearchStrategy.EndInitSectionStrategy)
+	fmt.Fprintf(&buf, "EndPrintSectionStrategy = %q\n", printerDef.SearchStrategy.EndPrintSectionStrategy)
+	buf.WriteString("\n")
+
+	// Write Parameters section
+	if len(printerDef.Parameters) > 0 {
+		buf.WriteString("[Parameters]\n")
+		for key, value := range printerDef.Parameters {
+			fmt.Fprintf(&buf, "%s = %v\n", key, formatValue(value))
+		}
+		buf.WriteString("\n")
+	}
+
+	// Write Template section with multiline string
+	buf.WriteString("[Template]\n")
+	buf.WriteString("Code = \"\"\"\n")
+	buf.WriteString(printerDef.Template.Code)
+	if !strings.HasSuffix(printerDef.Template.Code, "\n") {
+		buf.WriteString("\n")
+	}
+	buf.WriteString("\"\"\"\n")
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write([]byte(buf.String()))
+}
+
+func formatStringSlice(slice []string) string {
+	if len(slice) == 0 {
+		return "[]"
+	}
+	if len(slice) == 1 {
+		return fmt.Sprintf("[%q]", slice[0])
+	}
+	var parts []string
+	for _, s := range slice {
+		parts = append(parts, fmt.Sprintf("%q", s))
+	}
+	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
+}
+
+func formatValue(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		return fmt.Sprintf("%q", val)
+	case int, int64, float64:
+		return fmt.Sprintf("%v", val)
+	default:
+		return fmt.Sprintf("%v", val)
+	}
 }
