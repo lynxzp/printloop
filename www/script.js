@@ -313,6 +313,12 @@ function showError(message) {
     const firstChild = container.firstElementChild;
     container.insertBefore(errorDiv, firstChild);
 
+    // Scroll to top to make error visible
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
     setTimeout(() => {
         if (errorDiv.parentElement) {
             errorDiv.style.opacity = '0';
