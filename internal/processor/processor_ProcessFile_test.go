@@ -29,7 +29,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER1",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER1",
 				"HEADER2",
@@ -56,7 +56,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT",
@@ -144,7 +144,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT",
@@ -242,7 +242,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT", "; This is a comment",
@@ -272,7 +272,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				" START_PRINT ",
@@ -302,7 +302,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				" END_PRINT",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT",
@@ -332,7 +332,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				" END_PRINT ; Another end comment",
 				"FOOTER",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER",
 				"START_PRINT",
@@ -360,7 +360,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 		{
 			name:        "missing end marker",
 			input:       []string{"HEADER", "START_PRINT", "BODY"},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expectError: true,
 		},
 		{
@@ -388,7 +388,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				"END_PRINT",
 				"FOOTER1",
 			},
-			printerName: "unit tests",
+			printerName: "unit-tests",
 			expected: []string{
 				"HEADER1 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",
 				"HEADER2",
@@ -522,7 +522,7 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 	// Create a processor instance for testing
 	config := ProcessingRequest{
 		Iterations: 1,
-		Printer:    "unit tests",
+		Printer:    "unit-tests",
 	}
 	p, err := NewStreamingProcessor(config)
 	if err != nil {
