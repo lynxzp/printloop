@@ -32,8 +32,8 @@ func main() {
 	http.HandleFunc("POST /upload", webserver.UploadHandler)
 	http.HandleFunc("/template", webserver.TemplateHandler)
 
-	// Serve static files (CSS, JS, images)
-	http.Handle("/www/", http.StripPrefix("/www/", http.FileServer(http.Dir("www/"))))
+	// Serve static files from embedded FS
+	http.Handle("/www/", http.StripPrefix("/www/", webserver.StaticFileServer()))
 
 	slog.Info("Server started on port :8080")
 	slog.Info("Open http://localhost:8080 in your browser")

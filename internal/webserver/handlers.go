@@ -1,8 +1,10 @@
 package webserver
 
 import (
+	"embed"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,14 +15,16 @@ import (
 	"time"
 )
 
+//go:embed www/*
+var wwwFiles embed.FS
+
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Read HTML file
-	htmlContent, err := os.ReadFile("www/index.html")
+	htmlContent, err := wwwFiles.ReadFile("www/index.html")
 	if err != nil {
 		slog.Error("Error reading index.html:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -234,4 +238,14 @@ func formatValue(v interface{}) string {
 	default:
 		return fmt.Sprintf("%v", val)
 	}
+}
+
+func StaticFileServer() http.Handler {
+	subFS, err := fs.Sub(wwwFiles, "www")
+	if err != nil {
+		slog.Error("Failed to create sub-filesystem", "error", err)
+		return http.FileServer(http.FS(wwwFiles))
+	}
+
+	return http.FileServer(http.FS(subFS))
 }

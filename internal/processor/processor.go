@@ -448,7 +448,6 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 	}
 
 	if !strings.Contains(p.config.Printer, "unit-tests") {
-		panic(p.config.Printer)
 		// unit tests don't contain entire G-code, so we don't check for first print found
 		if !firstPrintFound {
 			return fx, fy, fz, lx, ly, lz, fmt.Errorf("no print commands found after end of init section at line %d", endInitSectionLastLine)
