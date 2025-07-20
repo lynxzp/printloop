@@ -46,13 +46,13 @@ type SearchStrategy interface {
 
 // ProcessingRequest represents a file processing request
 type ProcessingRequest struct {
-	FileName       string
-	Iterations     int64
-	WaitTemp       int64
-	WaitMin        int64
-	ExtraExtrude   float64
-	Printer        string
-	CustomTemplate string
+	FileName            string
+	Iterations          int64
+	WaitBedCooldownTemp int64
+	WaitMin             int64
+	ExtraExtrude        float64
+	Printer             string
+	CustomTemplate      string
 }
 
 // Factory function to create search strategies

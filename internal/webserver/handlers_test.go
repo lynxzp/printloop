@@ -296,7 +296,7 @@ func TestReceiveRequest(t *testing.T) {
 			expectedError: false,
 			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
 				assert.Equal(t, int64(5), req.Iterations)
-				assert.Equal(t, int64(200), req.WaitTemp)
+				assert.Equal(t, int64(200), req.WaitBedCooldownTemp)
 				assert.Equal(t, int64(60), req.WaitMin)
 				assert.Equal(t, 0.1, req.ExtraExtrude)
 				assert.Equal(t, "test_printer", req.Printer)
@@ -410,7 +410,7 @@ func TestReceiveRequest(t *testing.T) {
 			expectedError: false,
 			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
 				assert.Equal(t, int64(5), req.Iterations)
-				assert.Equal(t, int64(0), req.WaitTemp)
+				assert.Equal(t, int64(0), req.WaitBedCooldownTemp)
 				assert.Equal(t, int64(0), req.WaitMin)
 				assert.Equal(t, 0.0, req.ExtraExtrude)
 				assert.Equal(t, "", req.Printer)

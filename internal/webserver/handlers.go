@@ -105,10 +105,10 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	if err != nil || req.Iterations <= 0 {
 		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
 	}
-	waitTempS := r.FormValue("wait_temp")
-	req.WaitTemp, err = strconv.ParseInt(waitTempS, 10, 64)
-	if (err != nil || req.WaitTemp < 0) && waitTempS != "" {
-		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitTempS, err)
+	waitBedCooldownTempS := r.FormValue("waitBedCooldownTemp")
+	req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
+	if (err != nil || req.WaitBedCooldownTemp < 0) && waitBedCooldownTempS != "" {
+		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
 	}
 	waitMinS := r.FormValue("wait_min")
 	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)

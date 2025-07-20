@@ -13,6 +13,11 @@ function initializeApp() {
     const showTemplateBtn = document.getElementById('showTemplateBtn');
     const hideTemplateBtn = document.getElementById('hideTemplateBtn');
 
+    // Documentation panel elements
+    const docsPanel = document.getElementById('docsPanel');
+    const closeDocs = document.getElementById('closeDocs');
+    const mainContent = document.getElementById('mainContent');
+
     // Form submission handling
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
@@ -40,6 +45,11 @@ function initializeApp() {
 
     if (hideTemplateBtn) {
         hideTemplateBtn.addEventListener('click', hideTemplate);
+    }
+
+    // Documentation panel handling
+    if (closeDocs) {
+        closeDocs.addEventListener('click', closeDocsPanel);
     }
 
     // Add fade-in animation to container
@@ -171,7 +181,7 @@ function submitForm(useCustomTemplate) {
     const checkboxConfigs = [
         { checkboxId: 'printer_checkbox', inputId: 'printer', name: 'printer' },
         { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
-        { checkboxId: 'wait_temp_checkbox', inputId: 'wait_temp', name: 'wait_temp' },
+        { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
         { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
         { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' }
     ];
@@ -384,6 +394,9 @@ function showTemplate() {
         return;
     }
 
+    // Show documentation panel
+    openDocsPanel();
+
     // Show loading state
     const showTemplateBtn = document.getElementById('showTemplateBtn');
     const originalText = showTemplateBtn.textContent;
@@ -445,4 +458,23 @@ function hideTemplate() {
     if (customSubmitBtn) {
         customSubmitBtn.style.display = 'none';
     }
+
+    // Close documentation panel
+    closeDocsPanel();
+}
+
+function openDocsPanel() {
+    const docsPanel = document.getElementById('docsPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    docsPanel.classList.add('open');
+    mainContent.classList.add('docs-open');
+}
+
+function closeDocsPanel() {
+    const docsPanel = document.getElementById('docsPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    docsPanel.classList.remove('open');
+    mainContent.classList.remove('docs-open');
 }

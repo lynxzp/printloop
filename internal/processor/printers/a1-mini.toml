@@ -30,7 +30,7 @@ Code = """
 ======================================================================
 ; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
 G1 E-{{.Config.RetractDistance}}
-{{if gt .Request.WaitTemp 0}}M190 R{{.Request.WaitTemp}} ; Set wait bed temperature{{end}}
+{{if gt .Request.WaitBedCooldownTemp 0}}M190 R{{.Request.WaitBedCooldownTemp}} ; Set wait bed temperature{{end}}
 {{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout{{end}}
 G1 Y{{.Config.BackY}} ; Move back
 G1 X{{printf "%.2f" .Positions.LastPrintX}} ; Move to last print X position
