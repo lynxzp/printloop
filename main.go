@@ -27,18 +27,21 @@ func main() {
 		return
 	}
 
-	// Setup routes
-	http.HandleFunc("/", webserver.HomeHandler)
-	http.HandleFunc("POST /upload", webserver.UploadHandler)
-	http.HandleFunc("/template", webserver.TemplateHandler)
+	mux := http.NewServeMux()
 
+	// Setup routes
+	mux.HandleFunc("/", webserver.HomeHandler)
+	mux.HandleFunc("POST /upload", webserver.UploadHandler)
+	mux.HandleFunc("/template", webserver.TemplateHandler)
 	// Serve static files from embedded FS
-	http.Handle("/www/", http.StripPrefix("/www/", webserver.StaticFileServer()))
+	mux.Handle("/www/", http.StripPrefix("/www/", webserver.StaticFileServer()))
+
+	handler := webserver.CompressionMiddleware(mux)
 
 	slog.Info("Server started on port :8080")
 	slog.Info("Open http://localhost:8080 in your browser")
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		slog.Error("Server startup error", "err", err)
 		return
 	}
