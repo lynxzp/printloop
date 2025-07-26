@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Continuous loop 3D printing</title>
-    <link rel="stylesheet" href="/www/style.css">
+    <link rel="stylesheet" href="./www/style.css">
 </head>
 <body>
 <div class="app-container">
@@ -68,7 +68,7 @@ G4 S{{mul .Request.WaitMin 60}}</div>
                 <p><b>IMPORTANT NOTICE:</b> This project is in beta version and has been tested with only one 3D model. Use with caution and ensure the printer is supervised during the first automatic model change.</p>
             </div>
 
-            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <form id="uploadForm" action="./upload" method="post" enctype="multipart/form-data">
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-content">
                         <p>Drag and drop G-code files here</p>
@@ -148,6 +148,6 @@ G4 S{{mul .Request.WaitMin 60}}</div>
     </div>
 </div>
 
-<script src="/www/script.js"></script>
+<script src="./www/script.js"></script>
 </body>
 </html>

@@ -195,7 +195,7 @@ function submitForm(useCustomTemplate) {
         }
     });
 
-    fetch('/upload', {
+    fetch('./upload', {
         method: 'POST',
         body: formData
     })
@@ -403,7 +403,7 @@ function showTemplate() {
     showTemplateBtn.textContent = 'Loading...';
     showTemplateBtn.disabled = true;
 
-    fetch(`/template?printer=${encodeURIComponent(printerName)}`)
+    fetch(`./template?printer=${encodeURIComponent(printerName)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Failed to load template: ${response.status}`);
