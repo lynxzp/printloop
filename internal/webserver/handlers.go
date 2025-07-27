@@ -72,19 +72,15 @@ func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", req.FileName))
 	w.Header().Set("Content-Type", "application/octet-stream")
 	fileName := path.Join("files/results", req.FileName)
-	resFile, err := os.Stat(fileName)
-	if err != nil {
-		return fmt.Errorf("failed to stat result file %s: %w", fileName, err)
-	}
-	w.Header().Set("Content-Length", strconv.FormatInt(resFile.Size(), 10))
 
 	file, err := os.Open(fileName)
 	if err != nil {
 		return fmt.Errorf("failed to open result file %s: %w", fileName, err)
 	}
+	defer file.Close()
 
-	writtenSize, err := io.Copy(w, file)
-	if err != nil || writtenSize != resFile.Size() {
+	_, err = io.Copy(w, file)
+	if err != nil {
 		return fmt.Errorf("failed writing response: %w", err)
 	}
 	return nil

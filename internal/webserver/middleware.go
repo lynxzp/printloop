@@ -43,7 +43,6 @@ func CompressionMiddleware(next http.Handler) http.Handler {
 		}
 
 		if encoding != "" {
-			w.Header().Del("Content-Length") // Can't know compressed size
 			cw := &compressResponseWriter{ResponseWriter: w, writer: writer}
 			next.ServeHTTP(cw, r)
 		} else {

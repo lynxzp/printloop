@@ -210,7 +210,6 @@ func TestSendResponse(t *testing.T) {
 				t.Helper()
 				assert.Equal(t, "application/octet-stream", w.Header().Get("Content-Type"))
 				assert.Contains(t, w.Header().Get("Content-Disposition"), req.FileName)
-				assert.Equal(t, "12", w.Header().Get("Content-Length")) // "test content" is 12 bytes
 				assert.Equal(t, "test content", w.Body.String())
 			},
 		},
@@ -244,7 +243,6 @@ func TestSendResponse(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder, _ processor.ProcessingRequest) {
 				t.Helper()
-				assert.Equal(t, "0", w.Header().Get("Content-Length"))
 				assert.Empty(t, w.Body.String())
 			},
 		},

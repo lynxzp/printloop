@@ -5,7 +5,7 @@ RUN adduser -D -u 10001 scratchuser
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o printloop .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o printloop .
 RUN mkdir -p /app/files/uploads /app/files/results /app/tmp && \
     chown -R scratchuser:scratchuser /app/files && \
     chown -R scratchuser:scratchuser /app/tmp
