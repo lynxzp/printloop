@@ -56,7 +56,7 @@ type ProcessingRequest struct {
 }
 
 // Factory function to create search strategies
-func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
+func CreateSearchStrategy(strategyName string) (SearchStrategy, error) { //nolint:ireturn
 	switch strategyName {
 	case "after_first_appear":
 		return &strategy.AfterFirstAppearStrategy{}, nil
@@ -110,7 +110,7 @@ func isValidPrinterName(name string) bool {
 		isDigit := r >= '0' && r <= '9'
 		isSpecial := r == '-'
 
-		if !(isLetter || isDigit || isSpecial) {
+		if !isLetter && !isDigit && !isSpecial {
 			return false
 		}
 	}
@@ -132,7 +132,7 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 		// Use default printer definition
 		printerName := config.Printer
 		// Normalize printer name
-		printerName = strings.Replace(printerName, " ", "-", -1)
+		printerName = strings.ReplaceAll(printerName, " ", "-")
 		printerName = strings.ToLower(printerName)
 		// security validate printer name
 		if !isValidPrinterName(printerName) {
@@ -210,7 +210,7 @@ func parseCustomTemplate(customTemplate string, printerName string) (*PrinterDef
 
 	// Set name if not provided
 	if def.Name == "" {
-		def.Name = fmt.Sprintf("Custom-%s", printerName)
+		def.Name = "Custom-" + printerName
 	}
 
 	// Convert all numeric parameters to float64 for template compatibility
@@ -294,7 +294,7 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	}
 
 	// Pass 3: For each iteration, stream body + end marker + generated content
-	for i := int64(0); i < p.config.Iterations; i++ {
+	for i := range p.config.Iterations {
 		// Stream body (lines after EndInitSectionLastLine to before EndPrintSectionFirstLine)
 		if p.positions.EndInitSectionLastLine+1 < p.positions.EndPrintSectionFirstLine {
 			if err := p.streamLinesRange(inputPath, writer, p.positions.EndInitSectionLastLine+1, p.positions.EndPrintSectionFirstLine-1, false); err != nil {
@@ -362,7 +362,7 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 }
 
 // extractGCodeCoordinates scans file and extracts first and last print coordinates
-func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSectionLastLine int64) (float64, float64, float64, float64, float64, float64, error) {
+func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSectionLastLine int64) (float64, float64, float64, float64, float64, float64, error) { //nolint:gocognit
 	file, err := os.Open(filePath)
 	if err != nil {
 		return 0, 0, 0, 0, 0, 0, err
@@ -380,7 +380,7 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 		line := scanner.Text()
 
 		// Parse G-code coordinates from this line
-		if coords := p.parseGCodeLine(line); coords != nil {
+		if coords := p.parseGCodeLine(line); coords != nil { //nolint:nestif
 			// Update current Z from any G1 command
 			if coords.Z != nil {
 				currentZ = coords.Z

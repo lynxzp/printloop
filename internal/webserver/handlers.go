@@ -32,7 +32,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(htmlContent)
+	_, _ = w.Write(htmlContent)
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sendResponse(w, req) != nil {
+	err = sendResponse(w, req)
+	if err != nil {
 		log.Error("Failed to send response", "error", err)
 		http.Error(w, "Failed to send response: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -165,7 +166,7 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Normalize printer name (same logic as in processor)
-	printerName = strings.Replace(printerName, " ", "-", -1)
+	printerName = strings.ReplaceAll(printerName, " ", "-")
 	printerName = strings.ToLower(printerName)
 
 	// Load printer definition
@@ -212,7 +213,7 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString("\"\"\"\n")
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte(buf.String()))
+	_, _ = w.Write([]byte(buf.String()))
 }
 
 func formatStringSlice(slice []string) string {
@@ -222,7 +223,7 @@ func formatStringSlice(slice []string) string {
 	if len(slice) == 1 {
 		return fmt.Sprintf("[%q]", slice[0])
 	}
-	var parts []string
+	parts := make([]string, 0, len(slice))
 	for _, s := range slice {
 		parts = append(parts, fmt.Sprintf("%q", s))
 	}

@@ -51,11 +51,10 @@ func initLogger() {
 	const useJSON = true
 	var handler slog.Handler
 	if !useJSON {
-
 		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
 			Level:     slog.LevelInfo,
-			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.SourceKey {
 					s := a.Value.Any().(*slog.Source)
 					s.File = path.Base(s.File)
@@ -67,7 +66,7 @@ func initLogger() {
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			AddSource: true,
 			Level:     slog.LevelInfo,
-			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.SourceKey {
 					s := a.Value.Any().(*slog.Source)
 					r := slog.String(slog.SourceKey, " "+path.Base(s.File)+":"+strconv.Itoa(s.Line)+" ")

@@ -1,0 +1,80 @@
+version: "2"
+run:
+  modules-download-mode: readonly
+linters:
+  default: all
+  disable:
+    - depguard # we have a small number of dependencies, and a lot of false alarm to internal packages
+    - exhaustruct # is overkill
+    - mnd # deprecated
+    - nlreturn
+    - tagliatelle
+    - wsl # cuddles
+    - testpackage # testing private methods is not perfect but is ok
+    - musttag # I don't like tag everything, duplicating the code
+
+    # temporary disabled, todo: enable and fix one by one
+    - containedctx
+    - cyclop
+    - err113
+    - errchkjson
+    - errorlint
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - godox
+    - gosec
+    - lll
+    - nonamedreturns
+    - varnamelen
+    - wrapcheck
+
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: .go
+        text: Comment should end in a period
+      - linters:
+          - usestdlibvars
+        text: "(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)"
+      - path: internal/webserver/handlers_test.go
+        linters:
+          - paralleltest
+          - tparallel
+      - path: "internal/processor/strategy/.*.go"
+        linters:
+          - dupl
+      - path: "internal/processor/strategy/.*_test.go"
+        linters:
+          - nestif
+          - gocognit
+          - maintidx
+      - path: "internal/processor/processor_ProcessFile_test.go"
+        linters:
+          - maintidx
+          - gocognit
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    # - gci # don't know how to fix their warnings
+    # - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

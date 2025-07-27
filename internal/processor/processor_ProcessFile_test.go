@@ -11,6 +11,7 @@ import (
 
 // Test core logic with simple string slices (no I/O) using the new streaming processor
 func TestStreamingProcessor_ProcessStream(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		input       []string
@@ -410,6 +411,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			// Create temporary directory
 			tempDir := t.TempDir()
 			inputPath := filepath.Join(tempDir, "input.txt")
@@ -516,6 +518,7 @@ func equalStringSlices(a, b []string) bool {
 }
 
 func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
+	t.Parallel()
 	// Helper function to create float64 pointer
 	floatPtr := func(f float64) *float64 { return &f }
 
@@ -693,6 +696,7 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := p.parseGCodeLine(tt.input)
 
 			if tt.expected == nil {
@@ -739,6 +743,7 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 }
 
 func TestStreamingProcessor_findMarkerPositions_LastPrintCoordinates(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		gcodeContent string
@@ -909,8 +914,9 @@ M625`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			// Create temporary file with test content
-			tmpFile, err := os.CreateTemp("", "gcode_test_*.gcode")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "gcode_test_*.gcode")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}

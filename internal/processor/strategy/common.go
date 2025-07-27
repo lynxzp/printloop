@@ -21,7 +21,7 @@ func findStartMarkerInWindow(window []string, markers []string, windowStartLine 
 	}
 
 	// Multiline marker search
-	for startIdx := 0; startIdx < len(window); startIdx++ {
+	for startIdx := range window {
 		if match := tryMatchMultilineStart(window, startIdx, windowStartLine, markers); match != nil {
 			return match
 		}
