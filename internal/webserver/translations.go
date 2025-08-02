@@ -21,7 +21,7 @@ var translations Translations
 // LoadTranslations loads all translation files
 func LoadTranslations() error {
 	translations = make(Translations)
-	
+
 	// Load English translations
 	enData, err := translationFiles.ReadFile("translations/en.json")
 	if err != nil {
@@ -32,7 +32,7 @@ func LoadTranslations() error {
 		return err
 	}
 	translations["en"] = enTrans
-	
+
 	// Load Ukrainian translations
 	ukData, err := translationFiles.ReadFile("translations/uk.json")
 	if err != nil {
@@ -43,7 +43,7 @@ func LoadTranslations() error {
 		return err
 	}
 	translations["uk"] = ukTrans
-	
+
 	return nil
 }
 
@@ -55,7 +55,7 @@ func GetLanguageFromRequest(r *http.Request) string {
 			return lang
 		}
 	}
-	
+
 	// Second, check Accept-Language header
 	acceptLang := r.Header.Get("Accept-Language")
 	if acceptLang != "" {
@@ -67,12 +67,15 @@ func GetLanguageFromRequest(r *http.Request) string {
 			lang = strings.TrimSpace(strings.Split(lang, ";")[0])
 			// Extract main language code
 			lang = strings.Split(lang, "-")[0]
+			if lang == "ru" {
+				return "uk"
+			}
 			if isValidLanguage(lang) {
 				return lang
 			}
 		}
 	}
-	
+
 	// Default to English
 	return "en"
 }
@@ -90,14 +93,14 @@ func GetTranslation(lang, key string) string {
 			return text
 		}
 	}
-	
+
 	// Fallback to English
 	if trans, exists := translations["en"]; exists {
 		if text, exists := trans[key]; exists {
 			return text
 		}
 	}
-	
+
 	// Fallback to key if translation not found
 	return key
 }
@@ -107,12 +110,12 @@ func GetTranslations(lang string) Translation {
 	if trans, exists := translations[lang]; exists {
 		return trans
 	}
-	
+
 	// Fallback to English
 	if trans, exists := translations["en"]; exists {
 		return trans
 	}
-	
+
 	// Return empty translation if nothing found
 	return make(Translation)
 }
