@@ -278,3 +278,25 @@ func StaticFileServer() http.Handler {
 
 	return http.FileServer(http.FS(subFS))
 }
+
+func FaviconHandler(filePath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data, err := wwwFiles.ReadFile(filePath)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Set appropriate content type
+		if strings.HasSuffix(filePath, ".ico") {
+			w.Header().Set("Content-Type", "image/x-icon")
+		} else if strings.HasSuffix(filePath, ".png") {
+			w.Header().Set("Content-Type", "image/png")
+		}
+
+		// Set cache headers for favicons
+		w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
+
+		_, _ = w.Write(data)
+	}
+}

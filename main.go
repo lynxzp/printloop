@@ -41,6 +41,13 @@ func main() {
 	mux.HandleFunc("/template", webserver.TemplateHandler)
 	// Serve static files from embedded FS
 	mux.Handle("/www/", http.StripPrefix("/www/", webserver.StaticFileServer()))
+	// Favicon routes - serve from embedded www directory
+	mux.HandleFunc("/favicon.ico", webserver.FaviconHandler("www/favicon.ico"))
+	mux.HandleFunc("/favicon-16x16.png", webserver.FaviconHandler("www/favicon-16x16.png"))
+	mux.HandleFunc("/favicon-32x32.png", webserver.FaviconHandler("www/favicon-32x32.png"))
+	mux.HandleFunc("/favicon-180x180.png", webserver.FaviconHandler("www/favicon-180x180.png"))
+	mux.HandleFunc("/favicon-192x192.png", webserver.FaviconHandler("www/favicon-192x192.png"))
+	mux.HandleFunc("/favicon-512x512.png", webserver.FaviconHandler("www/favicon-512x512.png"))
 
 	handler := webserver.CompressionMiddleware(mux)
 
