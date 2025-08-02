@@ -12,6 +12,12 @@ import (
 func main() {
 	initLogger()
 
+	// Initialize translations
+	if err := webserver.LoadTranslations(); err != nil {
+		slog.Error("Failed to load translations:", "err", err)
+		return
+	}
+
 	if err := os.MkdirAll("files", 0755); err != nil {
 		slog.Error("Failed to create files directory:", "err", err)
 		return
