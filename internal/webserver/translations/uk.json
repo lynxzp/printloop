@@ -28,13 +28,13 @@
   "docs_variables": "Змінні",
   "docs_var_iterations": "Загальна кількість ітерацій",
   "docs_var_bed_temp": "Температура охолодження столу (°C)",
-  "docs_var_wait_time": "Час очікування (хвилини)",
+  "docs_var_wait_time": "Час очікування (хвилин)",
   "docs_var_extra_extrude": "Додаткова екструзія (мм)",
   "docs_var_config_params": "Параметри конфігурації принтера",
-  "docs_var_first_coords": "Координати першого друку",
-  "docs_var_last_coords": "Координати останнього друку",
+  "docs_var_first_coords": "Координати першого друку, де вперше відбулася екструзія в основному циклі",
+  "docs_var_last_coords": "Координати останнього моменту друку",
   "docs_functions_patterns": "Функції та шаблони",
   "docs_math": "Математика: add, sub, mul, max",
   "docs_conditionals": "Умовні оператори",
-  "docs_common_usage": "Звичайне використання"
+  "docs_common_usage": "Приклади використання"
 }

@@ -33,10 +33,10 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Determine language
 	lang := GetLanguageFromRequest(r)
-	
+
 	// Get translations for the determined language
 	translations := GetTranslations(lang)
-	
+
 	// Create template data
 	data := TemplateData{
 		Lang: lang,
