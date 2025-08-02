@@ -3,6 +3,7 @@ package webserver
 import (
 	"embed"
 	"fmt"
+	"html/template"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -18,21 +19,52 @@ import (
 //go:embed www/*
 var wwwFiles embed.FS
 
+// TemplateData holds data for template rendering
+type TemplateData struct {
+	Lang string
+	T    Translation
+}
+
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	htmlContent, err := wwwFiles.ReadFile("www/index.html")
+	// Determine language
+	lang := GetLanguageFromRequest(r)
+	
+	// Get translations for the determined language
+	translations := GetTranslations(lang)
+	
+	// Create template data
+	data := TemplateData{
+		Lang: lang,
+		T:    translations,
+	}
+
+	// Read template file
+	templateContent, err := wwwFiles.ReadFile("www/index_template.html")
 	if err != nil {
-		slog.Error("Error reading index.html:", "error", err)
+		slog.Error("Error reading index_template.html:", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("index").Parse(string(templateContent))
+	if err != nil {
+		slog.Error("Error parsing template:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(htmlContent)
+	if err := tmpl.Execute(w, data); err != nil {
+		slog.Error("Error executing template:", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {

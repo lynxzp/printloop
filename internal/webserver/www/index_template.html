@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.T.title}}</title>
+    <link rel="stylesheet" href="./www/style.css">
+</head>
+<body>
+<div class="app-container">
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <a href="?lang=en" class="lang-link {{if eq .Lang "en"}}active{{end}}">EN</a>
+        <a href="?lang=uk" class="lang-link {{if eq .Lang "uk"}}active{{end}}">УК</a>
+    </div>
+
+    <!-- Documentation Panel -->
+    <div class="docs-panel" id="docsPanel">
+        <div class="docs-header">
+            <button class="close-docs" id="closeDocs">&times;</button>
+            <h2 class="docs-title">{{.T.template_documentation}}</h2>
+            <p class="docs-subtitle">{{.T.template_variables_reference}}</p>
+        </div>
+        <div class="docs-content">
+            <div class="docs-section">
+                <h3>{{.T.docs_overview}}</h3>
+                <p>{{.T.docs_overview_text}}</p>
+            </div>
+
+            <div class="docs-section">
+                <h3>{{.T.docs_variables}}</h3>
+                <ul class="docs-list">
+                    <li><strong>{{`{{.Request.Iterations}}`}}</strong> - {{.T.docs_var_iterations}}</li>
+                    <li><strong>{{`{{.Request.WaitBedCooldownTemp}}`}}</strong> - {{.T.docs_var_bed_temp}}</li>
+                    <li><strong>{{`{{.Request.WaitMin}}`}}</strong> - {{.T.docs_var_wait_time}}</li>
+                    <li><strong>{{`{{.Request.ExtraExtrude}}`}}</strong> - {{.T.docs_var_extra_extrude}}</li>
+                    <li><strong>{{`{{.Config.parameter_name}}`}}</strong> - {{.T.docs_var_config_params}}</li>
+                    <li><strong>{{`{{.Positions.FirstPrintX/Y/Z}}`}}</strong> - {{.T.docs_var_first_coords}}</li>
+                    <li><strong>{{`{{.Positions.LastPrintX/Y/Z}}`}}</strong> - {{.T.docs_var_last_coords}}</li>
+                </ul>
+            </div>
+
+            <div class="docs-section">
+                <h3>{{.T.docs_functions_patterns}}</h3>
+
+                <h4>{{.T.docs_math}}</h4>
+                <div class="docs-code">{{`{{add .Positions.FirstPrintX 10}}`}}
+{{`{{mul .Request.WaitMin 60}}`}}</div>
+
+                <h4>{{.T.docs_conditionals}}</h4>
+                <div class="docs-code">{{`{{if eq .Iteration 1}}`}}
+; First iteration only
+{{`{{end}}`}}
+
+{{`{{if gt .Request.WaitBedCooldownTemp 0}}`}}
+M190 R{{`{{.Request.WaitBedCooldownTemp}}`}}
+{{`{{end}}`}}</div>
+
+                <h4>{{.T.docs_common_usage}}</h4>
+                <div class="docs-code">; Move to start position
+G1 X{{`{{.Positions.FirstPrintX}}`}} Y{{`{{.Positions.FirstPrintY}}`}} F3000
+
+; Wait time
+G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="container">
+            <h1>{{.T.title}}</h1>
+            <div class="info" style="color:red">
+                <p><b>{{.T.important_notice}}</b> {{.T.important_notice_text}}</p>
+            </div>
+
+            <form id="uploadForm" action="./upload" method="post" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <p>{{.T.drag_drop_text}}</p>
+                        <p class="upload-subtext">{{.T.or_click_browse}}</p>
+                        <button type="button" class="browse-button" onclick="document.getElementById('file').click()">
+                            {{.T.choose_file}}
+                        </button>
+                        <input type="file" id="file" name="file" required accept=".gcode">
+                        <div class="file-info" id="fileInfo"></div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title">{{.T.printer_selection}}</h3>
+                    <div class="form-group">
+                        <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
+                        <label for="printer_checkbox">{{.T.select_printer}}</label>
+                        <select id="printer" name="printer" class="form-select" required>
+                            <option value="A1 mini">A1 mini</option>
+                        </select>
+                        <button type="button" id="showTemplateBtn" class="template-button">{{.T.show_template}}</button>
+                    </div>
+
+                    <div class="form-section" id="templateSection" style="display: none;">
+                        <h3 class="section-title">
+                            {{.T.printer_template}}
+                        </h3>
+                        <div class="template-container">
+                            <textarea id="templateContent" class="template-editor" placeholder="Template will appear here..."></textarea>
+                            <div class="template-actions">
+                                <button type="button" id="hideTemplateBtn" class="template-action-btn secondary">{{.T.hide}}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title">{{.T.processing_parameters}}</h3>
+                    <div class="form-group">
+                        <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
+                        <label for="iterations_checkbox">{{.T.iteration_number}}</label>
+                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
+                        <span class="input-unit">{{.T.cycles}}</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="waitBedCooldownTempCheckbox" class="form-checkbox">
+                        <label for="waitBedCooldownTempCheckbox">{{.T.wait_bed_cooldown}}</label>
+                        <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="20" max="80" value="40" required>
+                        <span class="input-unit">°C</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="wait_min_checkbox" class="form-checkbox" checked>
+                        <label for="wait_min_checkbox">{{.T.additional_wait_time}}</label>
+                        <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
+                        <span class="input-unit">{{.T.minutes}}</span>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="extra_extrude_checkbox" class="form-checkbox" checked>
+                        <label for="extra_extrude_checkbox">{{.T.extra_extrude}}</label>
+                        <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
+                        <span class="input-unit">{{.T.mm}}</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="submitBtn">
+                        <span class="btn-text">{{.T.process_download}}</span>
+                        <span class="loading" id="loading" style="display: none;">{{.T.processing}}</span>
+                    </button>
+                    <button type="button" id="submitCustomBtn" class="custom-submit-btn" style="display: none;">
+                        <span class="btn-text">{{.T.process_custom_template}}</span>
+                        <span class="loading" id="customLoading" style="display: none;">{{.T.processing}}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="./www/script.js"></script>
+</body>
+</html>

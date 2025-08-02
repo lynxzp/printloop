@@ -17,6 +17,10 @@ import (
 )
 
 func TestHomeHandler(t *testing.T) {
+	// Initialize translations for tests
+	err := LoadTranslations()
+	require.NoError(t, err)
+	
 	tests := []struct {
 		name           string
 		method         string
