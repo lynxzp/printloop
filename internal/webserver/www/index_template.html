@@ -23,31 +23,31 @@
         </div>
         <div class="docs-content">
             <div class="docs-section">
-                <h3>Overview</h3>
-                <p>Templates use Go's text/template syntax with <code>{{`{{.VariableName}}`}}</code> to generate G-code for continuous loop printing.</p>
+                <h3>{{.T.docs_overview}}</h3>
+                <p>{{.T.docs_overview_text}}</p>
             </div>
 
             <div class="docs-section">
-                <h3>Variables</h3>
+                <h3>{{.T.docs_variables}}</h3>
                 <ul class="docs-list">
-                    <li><strong>{{`{{.Request.Iterations}}`}}</strong> - Total iterations</li>
-                    <li><strong>{{`{{.Request.WaitBedCooldownTemp}}`}}</strong> - Bed cooldown temp (°C)</li>
-                    <li><strong>{{`{{.Request.WaitMin}}`}}</strong> - Wait time (minutes)</li>
-                    <li><strong>{{`{{.Request.ExtraExtrude}}`}}</strong> - Extra extrude (mm)</li>
-                    <li><strong>{{`{{.Config.parameter_name}}`}}</strong> - Printer config parameters</li>
-                    <li><strong>{{`{{.Positions.FirstPrintX/Y/Z}}`}}</strong> - First print coordinates</li>
-                    <li><strong>{{`{{.Positions.LastPrintX/Y/Z}}`}}</strong> - Last print coordinates</li>
+                    <li><strong>{{`{{.Request.Iterations}}`}}</strong> - {{.T.docs_var_iterations}}</li>
+                    <li><strong>{{`{{.Request.WaitBedCooldownTemp}}`}}</strong> - {{.T.docs_var_bed_temp}}</li>
+                    <li><strong>{{`{{.Request.WaitMin}}`}}</strong> - {{.T.docs_var_wait_time}}</li>
+                    <li><strong>{{`{{.Request.ExtraExtrude}}`}}</strong> - {{.T.docs_var_extra_extrude}}</li>
+                    <li><strong>{{`{{.Config.parameter_name}}`}}</strong> - {{.T.docs_var_config_params}}</li>
+                    <li><strong>{{`{{.Positions.FirstPrintX/Y/Z}}`}}</strong> - {{.T.docs_var_first_coords}}</li>
+                    <li><strong>{{`{{.Positions.LastPrintX/Y/Z}}`}}</strong> - {{.T.docs_var_last_coords}}</li>
                 </ul>
             </div>
 
             <div class="docs-section">
-                <h3>Functions & Patterns</h3>
+                <h3>{{.T.docs_functions_patterns}}</h3>
 
-                <h4>Math: add, sub, mul, max</h4>
+                <h4>{{.T.docs_math}}</h4>
                 <div class="docs-code">{{`{{add .Positions.FirstPrintX 10}}`}}
 {{`{{mul .Request.WaitMin 60}}`}}</div>
 
-                <h4>Conditionals</h4>
+                <h4>{{.T.docs_conditionals}}</h4>
                 <div class="docs-code">{{`{{if eq .Iteration 1}}`}}
 ; First iteration only
 {{`{{end}}`}}
@@ -56,7 +56,7 @@
 M190 R{{`{{.Request.WaitBedCooldownTemp}}`}}
 {{`{{end}}`}}</div>
 
-                <h4>Common Usage</h4>
+                <h4>{{.T.docs_common_usage}}</h4>
                 <div class="docs-code">; Move to start position
 G1 X{{`{{.Positions.FirstPrintX}}`}} Y{{`{{.Positions.FirstPrintY}}`}} F3000
 

@@ -22,5 +22,19 @@
   "template_documentation": "Template Documentation",
   "template_variables_reference": "Template Variables & Functions Reference",
   "printer_template": "Printer Template",
-  "hide": "Hide"
+  "hide": "Hide",
+  "docs_overview": "Overview",
+  "docs_overview_text": "Templates use Go's text/template syntax with {{.VariableName}} to generate G-code for continuous loop printing.",
+  "docs_variables": "Variables",
+  "docs_var_iterations": "Total iterations",
+  "docs_var_bed_temp": "Bed cooldown temp (°C)",
+  "docs_var_wait_time": "Wait time (minutes)",
+  "docs_var_extra_extrude": "Extra extrude (mm)",
+  "docs_var_config_params": "Printer config parameters",
+  "docs_var_first_coords": "First print coordinates",
+  "docs_var_last_coords": "Last print coordinates",
+  "docs_functions_patterns": "Functions & Patterns",
+  "docs_math": "Math: add, sub, mul, max",
+  "docs_conditionals": "Conditionals",
+  "docs_common_usage": "Common Usage"
 }
