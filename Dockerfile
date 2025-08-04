@@ -1,9 +1,8 @@
-# Build stage
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 RUN adduser -D -u 10001 scratchuser
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o printloop .
 RUN mkdir -p /app/files/uploads /app/files/results /app/tmp && \

@@ -3,7 +3,9 @@ package webserver
 import (
 	"compress/gzip"
 	"io"
+	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
@@ -48,5 +50,27 @@ func CompressionMiddleware(next http.Handler) http.Handler {
 		} else {
 			next.ServeHTTP(w, r)
 		}
+	})
+}
+
+func LogPageRef(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		referer := r.Referer()
+		if referer != "" {
+			ref, _ := url.QueryUnescape(referer)
+
+			refURL, err := url.Parse(ref)
+			if err == nil {
+				reqHost := r.Host
+
+				if refURL.Host != "" && refURL.Host != reqHost {
+					slog.Info("Hit the page", "url", r.URL.Path, "src", r.RemoteAddr, "ref", ref)
+				} else {
+					slog.Debug("Hit the page", "url", r.URL.Path, "src", r.RemoteAddr, "ref", ref)
+				}
+			}
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }

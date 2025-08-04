@@ -50,6 +50,7 @@ func main() {
 	mux.HandleFunc("/favicon-512x512.png", webserver.FaviconHandler("www/favicon-512x512.png"))
 
 	handler := webserver.CompressionMiddleware(mux)
+	handler = webserver.LogPageRef(handler)
 
 	slog.Info("Server started on port :8080")
 	slog.Info("Open http://localhost:8080 in your browser")
