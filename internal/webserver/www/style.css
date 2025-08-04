@@ -609,9 +609,8 @@ input[type="number"]:focus {
 
 /* When template button is in a form-group grid, make it fit content instead of full width */
 .form-group .template-button {
-    width: auto;
+    width: 126px;
     justify-self: end;
-    min-width: 80px;
 }
 
 .template-button:hover {
