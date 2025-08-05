@@ -71,10 +71,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log := slog.With("handler", "UploadHandler")
 	log.Info("Received upload request", "remote_addr", r.RemoteAddr)
 
+	// Determine language for error messages
+	lang := GetLanguageFromRequest(r)
+
 	req, err := receiveRequest(w, r)
 	if err != nil {
 		log.Error("Failed to receive request", "error", err)
-		WriteErrorResponse(w, err, http.StatusBadRequest)
+		WriteErrorResponseWithLang(w, err, http.StatusBadRequest, lang)
 		return
 	}
 	inFileName := path.Join("files/uploads", req.FileName)
@@ -86,14 +89,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	err = processor.ProcessFile(inFileName, outFileName, req)
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
-		WriteErrorResponse(w, err, http.StatusInternalServerError)
+		WriteErrorResponseWithLang(w, err, http.StatusInternalServerError, lang)
 		return
 	}
 
 	err = sendResponse(w, req)
 	if err != nil {
 		log.Error("Failed to send response", "error", err)
-		WriteErrorResponse(w, err, http.StatusInternalServerError)
+		WriteErrorResponseWithLang(w, err, http.StatusInternalServerError, lang)
 		return
 	}
 

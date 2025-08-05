@@ -32,12 +32,17 @@ type ErrorResponse struct {
 
 // CategorizeError analyzes an error and returns an appropriate ErrorResponse
 func CategorizeError(err error) ErrorResponse {
+	return CategorizeErrorWithLang(err, "en")
+}
+
+// CategorizeErrorWithLang analyzes an error and returns an appropriate ErrorResponse with translations
+func CategorizeErrorWithLang(err error, lang string) ErrorResponse {
 	if err == nil {
 		return ErrorResponse{
 			Type:        ErrorTypeInternal,
 			Code:        "unknown_error",
-			Title:       "Unknown Error",
-			Description: "An unknown error occurred.",
+			Title:       GetTranslation(lang, "error_processing_title"),
+			Description: GetTranslation(lang, "error_processing_description"),
 			Details:     "No error details available",
 		}
 	}
@@ -51,25 +56,25 @@ func CategorizeError(err error) ErrorResponse {
 			return ErrorResponse{
 				Type:        ErrorTypeTemplate,
 				Code:        "custom_template_error",
-				Title:       "Custom Template Error",
-				Description: "There was an error processing your custom template.",
+				Title:       GetTranslation(lang, "error_custom_template_title"),
+				Description: GetTranslation(lang, "error_custom_template_description"),
 				Details:     errMsg,
 				Suggestions: []string{
-					"Check template syntax for proper TOML format",
-					"Ensure all required sections are present (Markers, SearchStrategy, Template)",
-					"Validate template variables and functions",
+					GetTranslation(lang, "error_custom_template_suggestion_syntax"),
+					GetTranslation(lang, "error_custom_template_suggestion_sections"),
+					GetTranslation(lang, "error_custom_template_suggestion_variables"),
 				},
 			}
 		}
 		return ErrorResponse{
 			Type:        ErrorTypeTemplate,
 			Code:        "template_parsing_error",
-			Title:       "Template Parsing Error",
-			Description: "The printer template could not be parsed or executed.",
+			Title:       GetTranslation(lang, "error_template_parsing_title"),
+			Description: GetTranslation(lang, "error_template_parsing_description"),
 			Details:     errMsg,
 			Suggestions: []string{
-				"Try selecting a different printer",
-				"Check if the printer template is properly configured",
+				GetTranslation(lang, "error_template_parsing_suggestion_printer"),
+				GetTranslation(lang, "error_template_parsing_suggestion_config"),
 			},
 		}
 	}
@@ -79,13 +84,13 @@ func CategorizeError(err error) ErrorResponse {
 		return ErrorResponse{
 			Type:        ErrorTypeFileProcessing,
 			Code:        "marker_not_found",
-			Title:       "G-code Markers Not Found",
-			Description: "Required markers for loop insertion were not found in the G-code file.",
+			Title:       GetTranslation(lang, "error_marker_not_found_title"),
+			Description: GetTranslation(lang, "error_marker_not_found_description"),
 			Details:     errMsg,
 			Suggestions: []string{
-				"Ensure your G-code contains the required start and end markers",
-				"Try a different printer profile that matches your slicer settings",
-				"Check if the G-code was generated with compatible slicer settings",
+				GetTranslation(lang, "error_marker_not_found_suggestion_markers"),
+				GetTranslation(lang, "error_marker_not_found_suggestion_profile"),
+				GetTranslation(lang, "error_marker_not_found_suggestion_compatible"),
 			},
 		}
 	}
@@ -94,13 +99,13 @@ func CategorizeError(err error) ErrorResponse {
 		return ErrorResponse{
 			Type:        ErrorTypeFileProcessing,
 			Code:        "invalid_gcode_structure",
-			Title:       "Invalid G-code Structure",
-			Description: "The G-code file does not contain the expected structure for loop processing.",
+			Title:       GetTranslation(lang, "error_invalid_gcode_title"),
+			Description: GetTranslation(lang, "error_invalid_gcode_description"),
 			Details:     errMsg,
 			Suggestions: []string{
-				"Ensure the file contains actual print commands (G1 with positive E values)",
-				"Check that the G-code file is complete and not truncated",
-				"Verify the file was exported correctly from your slicer",
+				GetTranslation(lang, "error_invalid_gcode_suggestion_commands"),
+				GetTranslation(lang, "error_invalid_gcode_suggestion_complete"),
+				GetTranslation(lang, "error_invalid_gcode_suggestion_export"),
 			},
 		}
 	}
@@ -111,12 +116,12 @@ func CategorizeError(err error) ErrorResponse {
 			return ErrorResponse{
 				Type:        ErrorTypeConfiguration,
 				Code:        "printer_not_found",
-				Title:       "Printer Configuration Not Found",
-				Description: "The selected printer configuration could not be loaded.",
+				Title:       GetTranslation(lang, "error_printer_not_found_title"),
+				Description: GetTranslation(lang, "error_printer_not_found_description"),
 				Details:     errMsg,
 				Suggestions: []string{
-					"Select a different printer from the dropdown",
-					"Use a custom template if your printer is not supported",
+					GetTranslation(lang, "error_printer_not_found_suggestion_different"),
+					GetTranslation(lang, "error_printer_not_found_suggestion_custom"),
 				},
 			}
 		}
@@ -124,12 +129,12 @@ func CategorizeError(err error) ErrorResponse {
 			return ErrorResponse{
 				Type:        ErrorTypeValidation,
 				Code:        "invalid_printer_name",
-				Title:       "Invalid Printer Name",
-				Description: "The printer name contains invalid characters or format.",
+				Title:       GetTranslation(lang, "error_invalid_printer_name_title"),
+				Description: GetTranslation(lang, "error_invalid_printer_name_description"),
 				Details:     errMsg,
 				Suggestions: []string{
-					"Printer names can only contain letters, numbers, and hyphens",
-					"Select a printer from the dropdown instead of typing manually",
+					GetTranslation(lang, "error_invalid_printer_name_suggestion_format"),
+					GetTranslation(lang, "error_invalid_printer_name_suggestion_dropdown"),
 				},
 			}
 		}
@@ -140,13 +145,13 @@ func CategorizeError(err error) ErrorResponse {
 		return ErrorResponse{
 			Type:        ErrorTypeValidation,
 			Code:        "invalid_parameters",
-			Title:       "Invalid Parameters",
-			Description: "One or more processing parameters have invalid values.",
+			Title:       GetTranslation(lang, "error_invalid_parameters_title"),
+			Description: GetTranslation(lang, "error_invalid_parameters_description"),
 			Details:     errMsg,
 			Suggestions: []string{
-				"Ensure iteration count is a positive number",
-				"Check that all numeric values are within valid ranges",
-				"Review all form fields for correct input",
+				GetTranslation(lang, "error_invalid_parameters_suggestion_positive"),
+				GetTranslation(lang, "error_invalid_parameters_suggestion_ranges"),
+				GetTranslation(lang, "error_invalid_parameters_suggestion_fields"),
 			},
 		}
 	}
@@ -157,12 +162,12 @@ func CategorizeError(err error) ErrorResponse {
 			return ErrorResponse{
 				Type:        ErrorTypeFileIO,
 				Code:        "file_write_error",
-				Title:       "File Write Error",
-				Description: "Could not create or write the processed file.",
+				Title:       GetTranslation(lang, "error_file_write_title"),
+				Description: GetTranslation(lang, "error_file_write_description"),
 				Details:     errMsg,
 				Suggestions: []string{
-					"Check server disk space",
-					"Try uploading the file again",
+					GetTranslation(lang, "error_file_write_suggestion_space"),
+					GetTranslation(lang, "error_file_write_suggestion_retry"),
 				},
 			}
 		}
@@ -170,13 +175,13 @@ func CategorizeError(err error) ErrorResponse {
 			return ErrorResponse{
 				Type:        ErrorTypeFileIO,
 				Code:        "file_read_error",
-				Title:       "File Read Error",
-				Description: "Could not read the uploaded file.",
+				Title:       GetTranslation(lang, "error_file_read_title"),
+				Description: GetTranslation(lang, "error_file_read_description"),
 				Details:     errMsg,
 				Suggestions: []string{
-					"Ensure the file is not corrupted",
-					"Try uploading the file again",
-					"Check the file format and size",
+					GetTranslation(lang, "error_file_read_suggestion_corrupted"),
+					GetTranslation(lang, "error_file_read_suggestion_retry"),
+					GetTranslation(lang, "error_file_read_suggestion_format"),
 				},
 			}
 		}
@@ -187,13 +192,13 @@ func CategorizeError(err error) ErrorResponse {
 		return ErrorResponse{
 			Type:        ErrorTypeUpload,
 			Code:        "upload_form_error",
-			Title:       "File Upload Error",
-			Description: "There was a problem processing the uploaded file or form data.",
+			Title:       GetTranslation(lang, "error_upload_form_title"),
+			Description: GetTranslation(lang, "error_upload_form_description"),
 			Details:     errMsg,
 			Suggestions: []string{
-				"Check that a file was selected",
-				"Ensure the file size is not too large (max 1GB)",
-				"Try refreshing the page and uploading again",
+				GetTranslation(lang, "error_upload_form_suggestion_selected"),
+				GetTranslation(lang, "error_upload_form_suggestion_size"),
+				GetTranslation(lang, "error_upload_form_suggestion_refresh"),
 			},
 		}
 	}
@@ -202,20 +207,25 @@ func CategorizeError(err error) ErrorResponse {
 	return ErrorResponse{
 		Type:        ErrorTypeInternal,
 		Code:        "processing_error",
-		Title:       "Processing Error",
-		Description: "An error occurred while processing your request.",
+		Title:       GetTranslation(lang, "error_processing_title"),
+		Description: GetTranslation(lang, "error_processing_description"),
 		Details:     errMsg,
 		Suggestions: []string{
-			"Try uploading the file again",
-			"Check that all form fields are filled correctly",
-			"Ensure the G-code file is valid and complete",
+			GetTranslation(lang, "error_processing_suggestion_retry"),
+			GetTranslation(lang, "error_processing_suggestion_fields"),
+			GetTranslation(lang, "error_processing_suggestion_valid"),
 		},
 	}
 }
 
 // WriteErrorResponse writes a structured error response as JSON
 func WriteErrorResponse(w http.ResponseWriter, err error, statusCode int) {
-	errorResp := CategorizeError(err)
+	WriteErrorResponseWithLang(w, err, statusCode, "en")
+}
+
+// WriteErrorResponseWithLang writes a structured error response as JSON with language support
+func WriteErrorResponseWithLang(w http.ResponseWriter, err error, statusCode int, lang string) {
+	errorResp := CategorizeErrorWithLang(err, lang)
 	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

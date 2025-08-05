@@ -210,7 +210,12 @@ function submitForm(useCustomTemplate) {
         }
     });
 
-    fetch('./upload', {
+    // Get current language from URL for error messages (only if explicitly set)
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentLang = urlParams.get('lang');
+    const uploadUrl = currentLang ? `./upload?lang=${encodeURIComponent(currentLang)}` : './upload';
+
+    fetch(uploadUrl, {
         method: 'POST',
         body: formData
     })
