@@ -215,20 +215,13 @@ function submitForm(useCustomTemplate) {
         body: formData
     })
         .then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            console.log('Response content-type:', response.headers.get('content-type'));
-            
             if (!response.ok) {
                 // Try to parse error response as JSON
                 return response.text().then(text => {
-                    console.log('Error response text:', text);
                     try {
                         const errorData = JSON.parse(text);
-                        console.log('Parsed error data:', errorData);
                         throw { structured: true, ...errorData };
                     } catch (parseError) {
-                        console.log('JSON parsing failed:', parseError);
                         // Fallback to simple error if JSON parsing fails
                         throw new Error(`Server error: ${response.status} - ${text}`);
                     }
@@ -266,12 +259,27 @@ function submitForm(useCustomTemplate) {
         .catch(error => {
             console.error('Upload error:', error);
             
-            if (error.structured) {
+            // Check if this is our structured error
+            if (error && typeof error === 'object' && error.structured && error.type) {
                 // Handle structured error response
                 showStructuredError(error);
+            } else if (error && error.message && error.message.includes('{"type":')) {
+                // Extract JSON from error message and parse it
+                const jsonMatch = error.message.match(/\{.*\}/);
+                if (jsonMatch) {
+                    try {
+                        const errorData = JSON.parse(jsonMatch[0]);
+                        showStructuredError({ structured: true, ...errorData });
+                    } catch (parseError) {
+                        console.error('Failed to parse error JSON:', parseError);
+                        showError('Error processing file: ' + error.message);
+                    }
+                } else {
+                    showError('Error processing file: ' + error.message);
+                }
             } else {
                 // Handle simple error
-                showError('Error processing file: ' + error.message);
+                showError('Error processing file: ' + (error.message || 'Unknown error'));
             }
             resetSubmitButtons();
         });
