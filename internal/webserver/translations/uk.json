@@ -36,5 +36,7 @@
   "docs_functions_patterns": "Функції та шаблони",
   "docs_math": "Математика: add, sub, mul, max",
   "docs_conditionals": "Умовні оператори",
-  "docs_common_usage": "Приклади використання"
+  "docs_common_usage": "Приклади використання",
+  "edit": "редагувати",
+  "hide_parameters": "приховати"
 }

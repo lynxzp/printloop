@@ -119,7 +119,14 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                 </div>
 
                 <div class="form-section">
-                    <h3 class="section-title">{{.T.processing_parameters}}</h3>
+                    <div class="form-group">
+                        <div></div>
+                        <h3 class="section-title">{{.T.processing_parameters}}</h3>
+                        <div></div>
+                        <button type="button" id="editParametersBtn" class="template-button" data-edit-text="{{.T.edit}}" data-hide-text="{{.T.hide_parameters}}">{{.T.edit}}</button>
+                    </div>
+                    
+                    <div class="parameters-container" id="parametersContainer" style="display: none;">
                     <div class="form-group">
                         <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
                         <label for="iterations_checkbox">{{.T.iteration_number}}</label>
@@ -143,6 +150,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                         <label for="extra_extrude_checkbox">{{.T.extra_extrude}}</label>
                         <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
                         <span class="input-unit">{{.T.mm}}</span>
+                    </div>
                     </div>
                 </div>
 

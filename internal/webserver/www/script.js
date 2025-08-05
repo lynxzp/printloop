@@ -12,6 +12,7 @@ function initializeApp() {
     const btnText = document.querySelector('.btn-text');
     const showTemplateBtn = document.getElementById('showTemplateBtn');
     const hideTemplateBtn = document.getElementById('hideTemplateBtn');
+    const editParametersBtn = document.getElementById('editParametersBtn');
 
     // Documentation panel elements
     const docsPanel = document.getElementById('docsPanel');
@@ -45,6 +46,11 @@ function initializeApp() {
 
     if (hideTemplateBtn) {
         hideTemplateBtn.addEventListener('click', hideTemplate);
+    }
+
+    // Edit parameters button handling
+    if (editParametersBtn) {
+        editParametersBtn.addEventListener('click', toggleParameters);
     }
 
     // Documentation panel handling
@@ -477,4 +483,25 @@ function closeDocsPanel() {
 
     docsPanel.classList.remove('open');
     mainContent.classList.remove('docs-open');
+}
+
+function toggleParameters() {
+    const parametersContainer = document.getElementById('parametersContainer');
+    const editBtn = document.getElementById('editParametersBtn');
+    
+    if (parametersContainer.style.display === 'none') {
+        // Show parameters
+        parametersContainer.style.display = 'block';
+        editBtn.textContent = editBtn.getAttribute('data-hide-text');
+        
+        // Scroll to parameters section
+        parametersContainer.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    } else {
+        // Hide parameters
+        parametersContainer.style.display = 'none';
+        editBtn.textContent = editBtn.getAttribute('data-edit-text');
+    }
 }

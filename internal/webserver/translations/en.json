@@ -36,5 +36,7 @@
   "docs_functions_patterns": "Functions & Patterns",
   "docs_math": "Math: add, sub, mul, max",
   "docs_conditionals": "Conditionals",
-  "docs_common_usage": "Common Usage"
+  "docs_common_usage": "Common Usage",
+  "edit": "Edit",
+  "hide_parameters": "Hide"
 }
