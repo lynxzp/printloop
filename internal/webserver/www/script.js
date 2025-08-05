@@ -215,8 +215,24 @@ function submitForm(useCustomTemplate) {
         body: formData
     })
         .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+            console.log('Response content-type:', response.headers.get('content-type'));
+            
             if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
+                // Try to parse error response as JSON
+                return response.text().then(text => {
+                    console.log('Error response text:', text);
+                    try {
+                        const errorData = JSON.parse(text);
+                        console.log('Parsed error data:', errorData);
+                        throw { structured: true, ...errorData };
+                    } catch (parseError) {
+                        console.log('JSON parsing failed:', parseError);
+                        // Fallback to simple error if JSON parsing fails
+                        throw new Error(`Server error: ${response.status} - ${text}`);
+                    }
+                });
             }
 
             const disposition = response.headers.get('Content-Disposition');
@@ -249,7 +265,14 @@ function submitForm(useCustomTemplate) {
         })
         .catch(error => {
             console.error('Upload error:', error);
-            showError('Error processing file: ' + error.message);
+            
+            if (error.structured) {
+                // Handle structured error response
+                showStructuredError(error);
+            } else {
+                // Handle simple error
+                showError('Error processing file: ' + error.message);
+            }
             resetSubmitButtons();
         });
 }
@@ -335,6 +358,73 @@ function showError(message) {
 
     // Open the error panel
     openErrorPanel();
+}
+
+function showStructuredError(errorData) {
+    const errorMessage = document.getElementById('errorMessage');
+    if (!errorMessage) return;
+
+    // Build comprehensive error display
+    let errorHtml = `
+        <div class="error-header-info">
+            <h3 class="error-type-title">${errorData.title || 'Processing Error'}</h3>
+            <div class="error-type-badge error-type-${errorData.type || 'internal'}">${getErrorTypeBadge(errorData.type)}</div>
+        </div>
+        <div class="error-description">
+            <p><strong>Description:</strong> ${errorData.description || 'An error occurred during processing.'}</p>
+        </div>
+    `;
+
+    if (errorData.details) {
+        errorHtml += `
+            <div class="error-details">
+                <p><strong>Technical Details:</strong></p>
+                <div class="error-details-content">${escapeHtml(errorData.details)}</div>
+            </div>
+        `;
+    }
+
+    if (errorData.suggestions && errorData.suggestions.length > 0) {
+        errorHtml += `
+            <div class="error-suggestions">
+                <p><strong>Suggestions:</strong></p>
+                <ul class="error-suggestions-list">
+        `;
+        errorData.suggestions.forEach(suggestion => {
+            errorHtml += `<li>${escapeHtml(suggestion)}</li>`;
+        });
+        errorHtml += `
+                </ul>
+            </div>
+        `;
+    }
+
+    errorMessage.innerHTML = errorHtml;
+
+    // Open the error panel
+    openErrorPanel();
+}
+
+function getErrorTypeBadge(errorType) {
+    const badges = {
+        'file_processing': 'File Processing',
+        'template': 'Template',
+        'validation': 'Validation',
+        'configuration': 'Configuration',
+        'file_io': 'File I/O',
+        'upload': 'Upload',
+        'internal': 'Internal'
+    };
+    return badges[errorType] || 'Unknown';
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function resetSubmitButtons() {
