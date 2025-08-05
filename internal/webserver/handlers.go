@@ -74,7 +74,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	req, err := receiveRequest(w, r)
 	if err != nil {
 		log.Error("Failed to receive request", "error", err)
-		http.Error(w, "Invalid request: "+err.Error(), http.StatusBadRequest)
+		WriteErrorResponse(w, err, http.StatusBadRequest)
 		return
 	}
 	inFileName := path.Join("files/uploads", req.FileName)
@@ -86,14 +86,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	err = processor.ProcessFile(inFileName, outFileName, req)
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
-		http.Error(w, "File processing failed: "+err.Error(), http.StatusInternalServerError)
+		WriteErrorResponse(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = sendResponse(w, req)
 	if err != nil {
 		log.Error("Failed to send response", "error", err)
-		http.Error(w, "Failed to send response: "+err.Error(), http.StatusInternalServerError)
+		WriteErrorResponse(w, err, http.StatusInternalServerError)
 		return
 	}
 

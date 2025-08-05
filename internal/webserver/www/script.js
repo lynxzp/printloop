@@ -216,7 +216,16 @@ function submitForm(useCustomTemplate) {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
+                // Try to parse error response as JSON
+                return response.text().then(text => {
+                    try {
+                        const errorData = JSON.parse(text);
+                        throw { structured: true, ...errorData };
+                    } catch (parseError) {
+                        // Fallback to simple error if JSON parsing fails
+                        throw new Error(`Server error: ${response.status} - ${text}`);
+                    }
+                });
             }
 
             const disposition = response.headers.get('Content-Disposition');
@@ -249,7 +258,29 @@ function submitForm(useCustomTemplate) {
         })
         .catch(error => {
             console.error('Upload error:', error);
-            showError('Error processing file: ' + error.message);
+            
+            // Check if this is our structured error
+            if (error && typeof error === 'object' && error.structured && error.type) {
+                // Handle structured error response
+                showStructuredError(error);
+            } else if (error && error.message && error.message.includes('{"type":')) {
+                // Extract JSON from error message and parse it
+                const jsonMatch = error.message.match(/\{.*\}/);
+                if (jsonMatch) {
+                    try {
+                        const errorData = JSON.parse(jsonMatch[0]);
+                        showStructuredError({ structured: true, ...errorData });
+                    } catch (parseError) {
+                        console.error('Failed to parse error JSON:', parseError);
+                        showError('Error processing file: ' + error.message);
+                    }
+                } else {
+                    showError('Error processing file: ' + error.message);
+                }
+            } else {
+                // Handle simple error
+                showError('Error processing file: ' + (error.message || 'Unknown error'));
+            }
             resetSubmitButtons();
         });
 }
@@ -335,6 +366,73 @@ function showError(message) {
 
     // Open the error panel
     openErrorPanel();
+}
+
+function showStructuredError(errorData) {
+    const errorMessage = document.getElementById('errorMessage');
+    if (!errorMessage) return;
+
+    // Build comprehensive error display
+    let errorHtml = `
+        <div class="error-header-info">
+            <h3 class="error-type-title">${errorData.title || 'Processing Error'}</h3>
+            <div class="error-type-badge error-type-${errorData.type || 'internal'}">${getErrorTypeBadge(errorData.type)}</div>
+        </div>
+        <div class="error-description">
+            <p><strong>Description:</strong> ${errorData.description || 'An error occurred during processing.'}</p>
+        </div>
+    `;
+
+    if (errorData.details) {
+        errorHtml += `
+            <div class="error-details">
+                <p><strong>Technical Details:</strong></p>
+                <div class="error-details-content">${escapeHtml(errorData.details)}</div>
+            </div>
+        `;
+    }
+
+    if (errorData.suggestions && errorData.suggestions.length > 0) {
+        errorHtml += `
+            <div class="error-suggestions">
+                <p><strong>Suggestions:</strong></p>
+                <ul class="error-suggestions-list">
+        `;
+        errorData.suggestions.forEach(suggestion => {
+            errorHtml += `<li>${escapeHtml(suggestion)}</li>`;
+        });
+        errorHtml += `
+                </ul>
+            </div>
+        `;
+    }
+
+    errorMessage.innerHTML = errorHtml;
+
+    // Open the error panel
+    openErrorPanel();
+}
+
+function getErrorTypeBadge(errorType) {
+    const badges = {
+        'file_processing': 'File Processing',
+        'template': 'Template',
+        'validation': 'Validation',
+        'configuration': 'Configuration',
+        'file_io': 'File I/O',
+        'upload': 'Upload',
+        'internal': 'Internal'
+    };
+    return badges[errorType] || 'Unknown';
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function resetSubmitButtons() {

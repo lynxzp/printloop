@@ -106,7 +106,8 @@ func TestUploadHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.Contains(t, w.Body.String(), "Invalid request")
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Contains(t, w.Body.String(), "upload_form_error")
 			},
 		},
 		{
@@ -125,7 +126,8 @@ func TestUploadHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.Contains(t, w.Body.String(), "Invalid request")
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Contains(t, w.Body.String(), "processing_error")
 			},
 		},
 		{
@@ -139,7 +141,8 @@ func TestUploadHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.Contains(t, w.Body.String(), "Invalid request")
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Contains(t, w.Body.String(), "template_parsing_error")
 			},
 		},
 		{
@@ -164,7 +167,8 @@ func TestUploadHandler(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError, // Will fail in processor
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.Contains(t, w.Body.String(), "File processing failed")
+				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+				assert.Contains(t, w.Body.String(), "invalid_printer_name")
 			},
 		},
 	}
