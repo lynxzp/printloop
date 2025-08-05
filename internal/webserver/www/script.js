@@ -484,6 +484,7 @@ function openErrorPanel() {
 
     errorPanel.classList.add('open');
     mainContent.classList.add('error-open');
+    document.body.classList.add('error-panel-open');
 }
 
 function closeErrorPanel() {
@@ -492,6 +493,7 @@ function closeErrorPanel() {
 
     errorPanel.classList.remove('open');
     mainContent.classList.remove('error-open');
+    document.body.classList.remove('error-panel-open');
 }
 
 function toggleParameters() {

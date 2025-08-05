@@ -26,6 +26,7 @@ body {
     border-radius: 25px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(10px);
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .lang-link {
@@ -46,6 +47,11 @@ body {
 .lang-link.active {
     background: #667eea;
     color: white;
+}
+
+/* Language switcher adjustments when error panel is open */
+body.error-panel-open .language-switcher {
+    right: 420px;
 }
 
 /* Main Layout Container */
@@ -800,6 +806,11 @@ input[type="number"]:focus {
     .main-content.error-open {
         margin-right: 350px;
     }
+
+    /* Language switcher adjustment for tablet */
+    body.error-panel-open .language-switcher {
+        right: 370px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -819,6 +830,11 @@ input[type="number"]:focus {
 
     .main-content.error-open {
         margin-right: 0;
+    }
+
+    /* Language switcher stays in original position on mobile since error panel is full width */
+    body.error-panel-open .language-switcher {
+        right: 20px;
     }
 
     .container {
