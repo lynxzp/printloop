@@ -19,6 +19,10 @@ function initializeApp() {
     const closeDocs = document.getElementById('closeDocs');
     const mainContent = document.getElementById('mainContent');
 
+    // Error panel elements
+    const errorPanel = document.getElementById('errorPanel');
+    const closeError = document.getElementById('closeError');
+
     // Form submission handling
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
@@ -56,6 +60,11 @@ function initializeApp() {
     // Documentation panel handling
     if (closeDocs) {
         closeDocs.addEventListener('click', closeDocsPanel);
+    }
+
+    // Error panel handling
+    if (closeError) {
+        closeError.addEventListener('click', closeErrorPanel);
     }
 
     // Add fade-in animation to container
@@ -318,30 +327,14 @@ function formatFileSize(bytes) {
 }
 
 function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-notification fade-in';
-    errorDiv.innerHTML = `
-        <strong>Error:</strong> ${message}
-        <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.1rem; padding: 0; margin-left: 12px;">&times;</button>
-    `;
+    const errorMessage = document.getElementById('errorMessage');
+    if (!errorMessage) return;
 
-    const container = document.querySelector('.container');
-    const firstChild = container.firstElementChild;
-    container.insertBefore(errorDiv, firstChild);
+    // Set the error message content
+    errorMessage.innerHTML = `<strong>Error:</strong> ${message}`;
 
-    // Scroll to top to make error visible
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-
-    setTimeout(() => {
-        if (errorDiv.parentElement) {
-            errorDiv.style.opacity = '0';
-            errorDiv.style.transform = 'translateY(-15px)';
-            setTimeout(() => errorDiv.remove(), 250);
-        }
-    }, 4000);
+    // Open the error panel
+    openErrorPanel();
 }
 
 function resetSubmitButtons() {
@@ -483,6 +476,22 @@ function closeDocsPanel() {
 
     docsPanel.classList.remove('open');
     mainContent.classList.remove('docs-open');
+}
+
+function openErrorPanel() {
+    const errorPanel = document.getElementById('errorPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    errorPanel.classList.add('open');
+    mainContent.classList.add('error-open');
+}
+
+function closeErrorPanel() {
+    const errorPanel = document.getElementById('errorPanel');
+    const mainContent = document.getElementById('mainContent');
+
+    errorPanel.classList.remove('open');
+    mainContent.classList.remove('error-open');
 }
 
 function toggleParameters() {
