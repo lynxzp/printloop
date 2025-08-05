@@ -210,10 +210,10 @@ function submitForm(useCustomTemplate) {
         }
     });
 
-    // Get current language from URL for error messages
+    // Get current language from URL for error messages (only if explicitly set)
     const urlParams = new URLSearchParams(window.location.search);
-    const currentLang = urlParams.get('lang') || 'en';
-    const uploadUrl = `./upload?lang=${encodeURIComponent(currentLang)}`;
+    const currentLang = urlParams.get('lang');
+    const uploadUrl = currentLang ? `./upload?lang=${encodeURIComponent(currentLang)}` : './upload';
 
     fetch(uploadUrl, {
         method: 'POST',
