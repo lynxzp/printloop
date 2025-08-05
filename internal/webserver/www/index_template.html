@@ -73,6 +73,22 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
         </div>
     </div>
 
+    <!-- Error Panel -->
+    <div class="error-panel" id="errorPanel">
+        <div class="error-header">
+            <button class="close-error" id="closeError">&times;</button>
+            <h2 class="error-title">Error Details</h2>
+            <p class="error-subtitle">Processing Error Information</p>
+        </div>
+        <div class="error-content">
+            <div class="error-section">
+                <div class="error-message" id="errorMessage">
+                    <!-- Error message content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <div class="container">
