@@ -12,6 +12,7 @@ linters:
     - wsl # cuddles
     - testpackage # testing private methods is not perfect but is ok
     - musttag # I don't like tag everything, duplicating the code
+    - ireturn
 
     # temporary disabled, todo: enable and fix one by one
     - containedctx

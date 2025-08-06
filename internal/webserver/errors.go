@@ -11,13 +11,13 @@ import (
 type ErrorType string
 
 const (
-	ErrorTypeFileProcessing   ErrorType = "file_processing"
-	ErrorTypeTemplate         ErrorType = "template"
-	ErrorTypeValidation       ErrorType = "validation"
-	ErrorTypeConfiguration    ErrorType = "configuration"
-	ErrorTypeFileIO           ErrorType = "file_io"
-	ErrorTypeUpload           ErrorType = "upload"
-	ErrorTypeInternal         ErrorType = "internal"
+	ErrorTypeFileProcessing ErrorType = "file_processing"
+	ErrorTypeTemplate       ErrorType = "template"
+	ErrorTypeValidation     ErrorType = "validation"
+	ErrorTypeConfiguration  ErrorType = "configuration"
+	ErrorTypeFileIO         ErrorType = "file_io"
+	ErrorTypeUpload         ErrorType = "upload"
+	ErrorTypeInternal       ErrorType = "internal"
 )
 
 // ErrorResponse represents a structured error response
@@ -226,10 +226,10 @@ func WriteErrorResponse(w http.ResponseWriter, err error, statusCode int) {
 // WriteErrorResponseWithLang writes a structured error response as JSON with language support
 func WriteErrorResponseWithLang(w http.ResponseWriter, err error, statusCode int, lang string) {
 	errorResp := CategorizeErrorWithLang(err, lang)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	
+
 	if jsonErr := json.NewEncoder(w).Encode(errorResp); jsonErr != nil {
 		// Fallback to plain text if JSON encoding fails
 		w.Header().Set("Content-Type", "text/plain")

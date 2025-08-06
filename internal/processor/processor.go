@@ -56,7 +56,7 @@ type ProcessingRequest struct {
 }
 
 // Factory function to create search strategies
-func CreateSearchStrategy(strategyName string) (SearchStrategy, error) { //nolint:ireturn
+func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
 	switch strategyName {
 	case "after_first_appear":
 		return &strategy.AfterFirstAppearStrategy{}, nil
