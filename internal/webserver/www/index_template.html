@@ -145,25 +145,37 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                     <div class="parameters-container" id="parametersContainer" style="display: none;">
                     <div class="form-group">
                         <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
-                        <label for="iterations_checkbox">{{.T.iteration_number}}</label>
+                        <label for="iterations_checkbox">
+                            {{.T.iteration_number}}
+                            <span class="hint-icon" data-hint="hint_iterations">?</span>
+                        </label>
                         <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
                         <span class="input-unit">{{.T.cycles}}</span>
                     </div>
                     <div class="form-group">
                         <input type="checkbox" id="waitBedCooldownTempCheckbox" class="form-checkbox">
-                        <label for="waitBedCooldownTempCheckbox">{{.T.wait_bed_cooldown}}</label>
+                        <label for="waitBedCooldownTempCheckbox">
+                            {{.T.wait_bed_cooldown}}
+                            <span class="hint-icon" data-hint="hint_wait_bed_cooldown">?</span>
+                        </label>
                         <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="20" max="80" value="40" required>
                         <span class="input-unit">°C</span>
                     </div>
                     <div class="form-group">
                         <input type="checkbox" id="wait_min_checkbox" class="form-checkbox" checked>
-                        <label for="wait_min_checkbox">{{.T.additional_wait_time}}</label>
+                        <label for="wait_min_checkbox">
+                            {{.T.additional_wait_time}}
+                            <span class="hint-icon" data-hint="hint_additional_wait_time">?</span>
+                        </label>
                         <input type="number" id="wait_min" name="wait_min" min="0" max="60" value="0" required>
                         <span class="input-unit">{{.T.minutes}}</span>
                     </div>
                     <div class="form-group">
                         <input type="checkbox" id="extra_extrude_checkbox" class="form-checkbox" checked>
-                        <label for="extra_extrude_checkbox">{{.T.extra_extrude}}</label>
+                        <label for="extra_extrude_checkbox">
+                            {{.T.extra_extrude}}
+                            <span class="hint-icon" data-hint="hint_extra_extrude">?</span>
+                        </label>
                         <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
                         <span class="input-unit">{{.T.mm}}</span>
                     </div>
@@ -181,6 +193,18 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                     </button>
                 </div>
             </form>
+
+            <!-- Hint Popup -->
+            <div class="hint-popup" id="hintPopup">
+                <div class="hint-popup-content">
+                    <div class="hint-popup-header">
+                        <button class="hint-popup-close" id="hintPopupClose">&times;</button>
+                    </div>
+                    <div class="hint-popup-body" id="hintPopupBody">
+                        <!-- Hint content will be inserted here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

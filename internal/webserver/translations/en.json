@@ -91,5 +91,9 @@
   "error_processing_description": "An error occurred while processing your request.",
   "error_processing_suggestion_retry": "Try uploading the file again",
   "error_processing_suggestion_fields": "Check that all form fields are filled correctly",
-  "error_processing_suggestion_valid": "Ensure the G-code file is valid and complete"
+  "error_processing_suggestion_valid": "Ensure the G-code file is valid and complete",
+  "hint_extra_extrude": "When removing a part from the printer, some plastic may leak from the nozzle, which can cause under-extrusion on the first layer of the next part - this is a critical issue. To solve this, the printer will extrude additional filament before starting the next print. Monitor how part changes and first layer printing occur: if there's insufficient plastic at the start, increase this value; if too much, decrease it. If no plastic visually leaks during part changes, 0.2 is a reasonable value; if noticeable volume leaks, significantly increase extra extrusion for compensation. Adjust this value in cases of: high print temperature (very fluid plastic), large nozzle diameter, wet filament, long part change time (when waiting for bed cooling), and different filament types/colors with varying fluidity.",
+  "hint_iterations": "How many times the printer will drop the part and start printing again.",
+  "hint_wait_bed_cooldown": "After printing a part, if its base is very large, removing it will be nearly impossible. After bed cooling, in many cases the part removes much easier. However, this approach has drawbacks. Besides being slow, after several iterations of printing the same part in one location, it adheres more strongly to the bed, and cooling stops helping. Bambulab printers ignore cooling commands below 40 degrees.",
+  "hint_additional_wait_time": "If you need to cool below 40 degrees for Bambulab printers, the only option is to cool to 40 and then wait an additional constant time."
 }

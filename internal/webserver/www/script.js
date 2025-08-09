@@ -76,6 +76,9 @@ function initializeApp() {
     // Add input validation and formatting
     setupInputValidation();
     setupSelectValidation();
+
+    // Initialize hint system
+    initializeHintSystem();
 }
 
 function setupInputValidation() {
@@ -617,5 +620,85 @@ function toggleParameters() {
         // Hide parameters
         parametersContainer.style.display = 'none';
         editBtn.textContent = editBtn.getAttribute('data-edit-text');
+    }
+}
+
+// Hint system functionality
+function initializeHintSystem() {
+    const hintIcons = document.querySelectorAll('.hint-icon');
+    const hintPopup = document.getElementById('hintPopup');
+    const hintPopupClose = document.getElementById('hintPopupClose');
+    const hintPopupBody = document.getElementById('hintPopupBody');
+
+    // Add click handlers to hint icons
+    hintIcons.forEach(icon => {
+        icon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const hintKey = this.getAttribute('data-hint');
+            showHint(hintKey);
+        });
+    });
+
+    // Close popup handlers
+    if (hintPopupClose) {
+        hintPopupClose.addEventListener('click', closeHint);
+    }
+
+    if (hintPopup) {
+        hintPopup.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHint();
+            }
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && hintPopup && hintPopup.classList.contains('show')) {
+            closeHint();
+        }
+    });
+
+    function showHint(hintKey) {
+        // Get current language from URL or default to 'en'
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentLang = urlParams.get('lang') || 'en';
+        
+        // Fetch the hint content
+        fetch(`./hint?key=${encodeURIComponent(hintKey)}&lang=${encodeURIComponent(currentLang)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load hint: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(hintText => {
+                if (hintPopupBody) {
+                    hintPopupBody.innerHTML = `<p>${escapeHtml(hintText)}</p>`;
+                }
+                if (hintPopup) {
+                    hintPopup.classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                }
+            })
+            .catch(error => {
+                console.error('Hint error:', error);
+                if (hintPopupBody) {
+                    hintPopupBody.innerHTML = '<p>Unable to load hint information.</p>';
+                }
+                if (hintPopup) {
+                    hintPopup.classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+    }
+
+    function closeHint() {
+        if (hintPopup) {
+            hintPopup.classList.remove('show');
+            document.body.style.overflow = '';
+        }
     }
 }
