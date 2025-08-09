@@ -1085,7 +1085,6 @@ input[type="number"]:focus {
     align-items: center;
     padding: 20px;
     box-sizing: border-box;
-    backdrop-filter: blur(5px);
 }
 
 .hint-popup.show {

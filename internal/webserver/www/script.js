@@ -629,16 +629,51 @@ function initializeHintSystem() {
     const hintPopup = document.getElementById('hintPopup');
     const hintPopupClose = document.getElementById('hintPopupClose');
     const hintPopupBody = document.getElementById('hintPopupBody');
+    
+    let hintTimeout = null;
+    let currentHintElement = null;
 
-    // Add click handlers to hint icons
+    // Add click and hover handlers to hint icons
     hintIcons.forEach(icon => {
+        const hintKey = icon.getAttribute('data-hint');
+        
+        // Click handler
         icon.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
-            const hintKey = this.getAttribute('data-hint');
             showHint(hintKey);
         });
+
+        // Hover handlers for hint icon
+        icon.addEventListener('mouseenter', function(e) {
+            clearTimeout(hintTimeout);
+            currentHintElement = this;
+            hintTimeout = setTimeout(() => showHint(hintKey), 300);
+        });
+
+        icon.addEventListener('mouseleave', function(e) {
+            clearTimeout(hintTimeout);
+            if (!isMouseOverPopup(e)) {
+                scheduleHintClose();
+            }
+        });
+
+        // Add hover handlers to the parent label as well
+        const label = icon.closest('label');
+        if (label) {
+            label.addEventListener('mouseenter', function(e) {
+                clearTimeout(hintTimeout);
+                currentHintElement = icon;
+                hintTimeout = setTimeout(() => showHint(hintKey), 300);
+            });
+
+            label.addEventListener('mouseleave', function(e) {
+                clearTimeout(hintTimeout);
+                if (!isMouseOverPopup(e) && !isMouseOverIcon(e, icon)) {
+                    scheduleHintClose();
+                }
+            });
+        }
     });
 
     // Close popup handlers
@@ -652,6 +687,17 @@ function initializeHintSystem() {
                 closeHint();
             }
         });
+
+        // Keep popup open when mouse is over it
+        hintPopup.addEventListener('mouseenter', function(e) {
+            clearTimeout(hintTimeout);
+        });
+
+        hintPopup.addEventListener('mouseleave', function(e) {
+            if (!isMouseOverCurrentHintElement(e)) {
+                scheduleHintClose();
+            }
+        });
     }
 
     // Close on Escape key
@@ -661,10 +707,41 @@ function initializeHintSystem() {
         }
     });
 
+    function isMouseOverPopup(e) {
+        if (!hintPopup) return false;
+        const rect = hintPopup.getBoundingClientRect();
+        return e.clientX >= rect.left && e.clientX <= rect.right && 
+               e.clientY >= rect.top && e.clientY <= rect.bottom;
+    }
+
+    function isMouseOverIcon(e, icon) {
+        if (!icon) return false;
+        const rect = icon.getBoundingClientRect();
+        return e.clientX >= rect.left && e.clientX <= rect.right && 
+               e.clientY >= rect.top && e.clientY <= rect.bottom;
+    }
+
+    function isMouseOverCurrentHintElement(e) {
+        if (!currentHintElement) return false;
+        const label = currentHintElement.closest('label');
+        if (label) {
+            const rect = label.getBoundingClientRect();
+            return e.clientX >= rect.left && e.clientX <= rect.right && 
+                   e.clientY >= rect.top && e.clientY <= rect.bottom;
+        }
+        return isMouseOverIcon(e, currentHintElement);
+    }
+
+    function scheduleHintClose() {
+        clearTimeout(hintTimeout);
+        hintTimeout = setTimeout(closeHint, 200);
+    }
+
     function showHint(hintKey) {
-        // Get current language from URL or default to 'en'
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentLang = urlParams.get('lang') || 'en';
+        clearTimeout(hintTimeout);
+        
+        // Get current language from page's lang attribute, which matches server-side language detection
+        const currentLang = document.documentElement.lang || 'en';
         
         // Fetch the hint content
         fetch(`./hint?key=${encodeURIComponent(hintKey)}&lang=${encodeURIComponent(currentLang)}`)
@@ -680,7 +757,6 @@ function initializeHintSystem() {
                 }
                 if (hintPopup) {
                     hintPopup.classList.add('show');
-                    document.body.style.overflow = 'hidden';
                 }
             })
             .catch(error => {
@@ -690,15 +766,15 @@ function initializeHintSystem() {
                 }
                 if (hintPopup) {
                     hintPopup.classList.add('show');
-                    document.body.style.overflow = 'hidden';
                 }
             });
     }
 
     function closeHint() {
+        clearTimeout(hintTimeout);
+        currentHintElement = null;
         if (hintPopup) {
             hintPopup.classList.remove('show');
-            document.body.style.overflow = '';
         }
     }
 }
