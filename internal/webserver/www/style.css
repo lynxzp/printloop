@@ -1078,13 +1078,14 @@ input[type="number"]:focus {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: transparent;
     z-index: 2000;
     display: none;
     justify-content: center;
     align-items: center;
     padding: 20px;
     box-sizing: border-box;
+    pointer-events: none;
 }
 
 .hint-popup.show {
@@ -1102,6 +1103,7 @@ input[type="number"]:focus {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     position: relative;
     animation: slideIn 0.3s ease;
+    pointer-events: auto;
 }
 
 @keyframes slideIn {

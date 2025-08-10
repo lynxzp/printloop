@@ -630,72 +630,71 @@ function initializeHintSystem() {
     const hintPopupClose = document.getElementById('hintPopupClose');
     const hintPopupBody = document.getElementById('hintPopupBody');
     
-    let hintTimeout = null;
-    let currentHintElement = null;
+    let showTimeout = null;
+    let hideTimeout = null;
 
     // Add click and hover handlers to hint icons
     hintIcons.forEach(icon => {
         const hintKey = icon.getAttribute('data-hint');
+        const label = icon.closest('label');
         
-        // Click handler
+        // Click handler for icon
         icon.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            clearAllTimeouts();
             showHint(hintKey);
         });
 
-        // Hover handlers for hint icon
+        // Hover handlers for icon
         icon.addEventListener('mouseenter', function(e) {
-            clearTimeout(hintTimeout);
-            currentHintElement = this;
-            hintTimeout = setTimeout(() => showHint(hintKey), 300);
+            clearAllTimeouts();
+            showTimeout = setTimeout(() => showHint(hintKey), 300);
         });
 
         icon.addEventListener('mouseleave', function(e) {
-            clearTimeout(hintTimeout);
-            if (!isMouseOverPopup(e)) {
-                scheduleHintClose();
-            }
+            clearAllTimeouts();
+            hideTimeout = setTimeout(closeHint, 200);
         });
 
-        // Add hover handlers to the parent label as well
-        const label = icon.closest('label');
+        // Hover handlers for label (if exists)
         if (label) {
             label.addEventListener('mouseenter', function(e) {
-                clearTimeout(hintTimeout);
-                currentHintElement = icon;
-                hintTimeout = setTimeout(() => showHint(hintKey), 300);
+                clearAllTimeouts();
+                showTimeout = setTimeout(() => showHint(hintKey), 300);
             });
 
             label.addEventListener('mouseleave', function(e) {
-                clearTimeout(hintTimeout);
-                if (!isMouseOverPopup(e) && !isMouseOverIcon(e, icon)) {
-                    scheduleHintClose();
-                }
+                clearAllTimeouts();
+                hideTimeout = setTimeout(closeHint, 200);
             });
         }
     });
 
     // Close popup handlers
     if (hintPopupClose) {
-        hintPopupClose.addEventListener('click', closeHint);
+        hintPopupClose.addEventListener('click', function() {
+            clearAllTimeouts();
+            closeHint();
+        });
     }
 
+    // Keep popup open when hovering over it
     if (hintPopup) {
+        hintPopup.addEventListener('mouseenter', function() {
+            clearAllTimeouts();
+        });
+
+        hintPopup.addEventListener('mouseleave', function() {
+            clearAllTimeouts();
+            hideTimeout = setTimeout(closeHint, 200);
+        });
+
+        // Close on background click (only if clicking the transparent background)
         hintPopup.addEventListener('click', function(e) {
             if (e.target === this) {
+                clearAllTimeouts();
                 closeHint();
-            }
-        });
-
-        // Keep popup open when mouse is over it
-        hintPopup.addEventListener('mouseenter', function(e) {
-            clearTimeout(hintTimeout);
-        });
-
-        hintPopup.addEventListener('mouseleave', function(e) {
-            if (!isMouseOverCurrentHintElement(e)) {
-                scheduleHintClose();
             }
         });
     }
@@ -703,42 +702,18 @@ function initializeHintSystem() {
     // Close on Escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && hintPopup && hintPopup.classList.contains('show')) {
+            clearAllTimeouts();
             closeHint();
         }
     });
 
-    function isMouseOverPopup(e) {
-        if (!hintPopup) return false;
-        const rect = hintPopup.getBoundingClientRect();
-        return e.clientX >= rect.left && e.clientX <= rect.right && 
-               e.clientY >= rect.top && e.clientY <= rect.bottom;
-    }
-
-    function isMouseOverIcon(e, icon) {
-        if (!icon) return false;
-        const rect = icon.getBoundingClientRect();
-        return e.clientX >= rect.left && e.clientX <= rect.right && 
-               e.clientY >= rect.top && e.clientY <= rect.bottom;
-    }
-
-    function isMouseOverCurrentHintElement(e) {
-        if (!currentHintElement) return false;
-        const label = currentHintElement.closest('label');
-        if (label) {
-            const rect = label.getBoundingClientRect();
-            return e.clientX >= rect.left && e.clientX <= rect.right && 
-                   e.clientY >= rect.top && e.clientY <= rect.bottom;
-        }
-        return isMouseOverIcon(e, currentHintElement);
-    }
-
-    function scheduleHintClose() {
-        clearTimeout(hintTimeout);
-        hintTimeout = setTimeout(closeHint, 200);
+    function clearAllTimeouts() {
+        clearTimeout(showTimeout);
+        clearTimeout(hideTimeout);
     }
 
     function showHint(hintKey) {
-        clearTimeout(hintTimeout);
+        clearAllTimeouts();
         
         // Get current language from page's lang attribute, which matches server-side language detection
         const currentLang = document.documentElement.lang || 'en';
@@ -771,8 +746,7 @@ function initializeHintSystem() {
     }
 
     function closeHint() {
-        clearTimeout(hintTimeout);
-        currentHintElement = null;
+        clearAllTimeouts();
         if (hintPopup) {
             hintPopup.classList.remove('show');
         }
