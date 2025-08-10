@@ -76,6 +76,9 @@ function initializeApp() {
     // Add input validation and formatting
     setupInputValidation();
     setupSelectValidation();
+
+    // Initialize hint system
+    initializeHintSystem();
 }
 
 function setupInputValidation() {
@@ -617,5 +620,145 @@ function toggleParameters() {
         // Hide parameters
         parametersContainer.style.display = 'none';
         editBtn.textContent = editBtn.getAttribute('data-edit-text');
+    }
+}
+
+// Hint system functionality
+function initializeHintSystem() {
+    const hintIcons = document.querySelectorAll('.hint-icon');
+    const hintPopup = document.getElementById('hintPopup');
+    const hintPopupClose = document.getElementById('hintPopupClose');
+    const hintPopupBody = document.getElementById('hintPopupBody');
+    
+    let showTimeout = null;
+    let hideTimeout = null;
+
+    // Add click and hover handlers to hint icons
+    hintIcons.forEach(icon => {
+        const hintKey = icon.getAttribute('data-hint');
+        const label = icon.closest('label');
+        
+        // Click handler for icon
+        icon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearAllTimeouts();
+            showHint(hintKey);
+        });
+
+        // Hover handlers for icon
+        icon.addEventListener('mouseenter', function(e) {
+            clearAllTimeouts();
+            showTimeout = setTimeout(() => showHint(hintKey), 300);
+        });
+
+        icon.addEventListener('mouseleave', function(e) {
+            clearAllTimeouts();
+            hideTimeout = setTimeout(closeHint, 200);
+        });
+
+        // Hover handlers for label (if exists)
+        if (label) {
+            label.addEventListener('mouseenter', function(e) {
+                clearAllTimeouts();
+                showTimeout = setTimeout(() => showHint(hintKey), 300);
+            });
+
+            label.addEventListener('mouseleave', function(e) {
+                clearAllTimeouts();
+                hideTimeout = setTimeout(closeHint, 200);
+            });
+        }
+    });
+
+    // Close popup handlers
+    if (hintPopupClose) {
+        hintPopupClose.addEventListener('click', function() {
+            clearAllTimeouts();
+            closeHint();
+        });
+    }
+
+    // Keep popup open when hovering over it
+    if (hintPopup) {
+        hintPopup.addEventListener('mouseenter', function() {
+            clearAllTimeouts();
+        });
+
+        hintPopup.addEventListener('mouseleave', function() {
+            clearAllTimeouts();
+            hideTimeout = setTimeout(closeHint, 200);
+        });
+
+        // Close on background click (only if clicking the transparent background)
+        hintPopup.addEventListener('click', function(e) {
+            if (e.target === this) {
+                clearAllTimeouts();
+                closeHint();
+            }
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && hintPopup && hintPopup.classList.contains('show')) {
+            clearAllTimeouts();
+            closeHint();
+        }
+    });
+
+    function clearAllTimeouts() {
+        clearTimeout(showTimeout);
+        clearTimeout(hideTimeout);
+    }
+
+    function showHint(hintKey) {
+        clearAllTimeouts();
+        
+        // Get current language from page's lang attribute, which matches server-side language detection
+        const currentLang = document.documentElement.lang || 'en';
+        
+        // Fetch the hint content
+        fetch(`./hint?key=${encodeURIComponent(hintKey)}&lang=${encodeURIComponent(currentLang)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load hint: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(hintText => {
+                if (hintPopupBody) {
+                    // Split hint text into paragraphs using double newline as separator
+                    const paragraphs = hintText.split('\n\n').filter(p => p.trim().length > 0);
+                    
+                    if (paragraphs.length > 1) {
+                        // Multiple paragraphs - format each as a separate <p> element
+                        const paragraphHtml = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
+                        hintPopupBody.innerHTML = paragraphHtml;
+                    } else {
+                        // Single paragraph - display as before
+                        hintPopupBody.innerHTML = `<p>${escapeHtml(hintText)}</p>`;
+                    }
+                }
+                if (hintPopup) {
+                    hintPopup.classList.add('show');
+                }
+            })
+            .catch(error => {
+                console.error('Hint error:', error);
+                if (hintPopupBody) {
+                    hintPopupBody.innerHTML = '<p>Unable to load hint information.</p>';
+                }
+                if (hintPopup) {
+                    hintPopup.classList.add('show');
+                }
+            });
+    }
+
+    function closeHint() {
+        clearAllTimeouts();
+        if (hintPopup) {
+            hintPopup.classList.remove('show');
+        }
     }
 }

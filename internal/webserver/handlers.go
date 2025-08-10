@@ -303,3 +303,35 @@ func FaviconHandler(filePath string) http.HandlerFunc {
 		_, _ = w.Write(data)
 	}
 }
+
+// HintHandler serves hint text for the UI tooltips
+func HintHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get hint key and language from query parameters
+	hintKey := r.URL.Query().Get("key")
+	if hintKey == "" {
+		http.Error(w, "Hint key is required", http.StatusBadRequest)
+		return
+	}
+
+	// Determine language
+	lang := GetLanguageFromRequest(r)
+
+	// Get the hint text
+	hintText := GetTranslation(lang, hintKey)
+	if hintText == hintKey {
+		// If translation not found, return a default message
+		if lang == "uk" {
+			hintText = "Інформація недоступна"
+		} else {
+			hintText = "Information not available"
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte(hintText))
+}

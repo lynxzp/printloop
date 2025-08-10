@@ -39,6 +39,7 @@ func main() {
 	mux.HandleFunc("/", webserver.HomeHandler)
 	mux.HandleFunc("POST /upload", webserver.UploadHandler)
 	mux.HandleFunc("/template", webserver.TemplateHandler)
+	mux.HandleFunc("/hint", webserver.HintHandler)
 	// Serve static files from embedded FS
 	mux.Handle("/www/", http.StripPrefix("/www/", webserver.StaticFileServer()))
 	// Favicon routes - serve from embedded www directory
