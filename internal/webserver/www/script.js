@@ -728,7 +728,17 @@ function initializeHintSystem() {
             })
             .then(hintText => {
                 if (hintPopupBody) {
-                    hintPopupBody.innerHTML = `<p>${escapeHtml(hintText)}</p>`;
+                    // Split hint text into paragraphs using double newline as separator
+                    const paragraphs = hintText.split('\n\n').filter(p => p.trim().length > 0);
+                    
+                    if (paragraphs.length > 1) {
+                        // Multiple paragraphs - format each as a separate <p> element
+                        const paragraphHtml = paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
+                        hintPopupBody.innerHTML = paragraphHtml;
+                    } else {
+                        // Single paragraph - display as before
+                        hintPopupBody.innerHTML = `<p>${escapeHtml(hintText)}</p>`;
+                    }
                 }
                 if (hintPopup) {
                     hintPopup.classList.add('show');
