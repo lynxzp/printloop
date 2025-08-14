@@ -98,6 +98,9 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
             </div>
 
             <form id="uploadForm" action="./upload" method="post" enctype="multipart/form-data">
+                <!-- CSRF token -->
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-content">
                         <p>{{.T.drag_drop_text}}</p>
