@@ -298,15 +298,67 @@ function handleFileSelect(event) {
     const fileInfo = document.getElementById('fileInfo');
 
     if (file && fileInfo) {
+        // Client-side file validation
+        const validationResult = validateFile(file);
+        if (!validationResult.valid) {
+            showError(validationResult.error);
+            // Clear the file input
+            event.target.value = '';
+            fileInfo.style.display = 'none';
+            return;
+        }
+
         const size = formatFileSize(file.size);
 
         fileInfo.innerHTML = `
-            <strong>Selected file:</strong> ${file.name}<br>
+            <strong>Selected file:</strong> ${escapeHtml(file.name)}<br>
             <strong>Size:</strong> ${size}
         `;
         fileInfo.style.display = 'block';
         fileInfo.classList.add('fade-in');
     }
+}
+
+// Client-side file validation
+function validateFile(file) {
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    const allowedExtensions = ['.gcode', '.gco', '.g', '.nc'];
+    
+    // Check file size
+    if (file.size > maxSize) {
+        return {
+            valid: false,
+            error: `File too large: ${formatFileSize(file.size)} (max ${formatFileSize(maxSize)})`
+        };
+    }
+    
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    if (!hasValidExtension) {
+        return {
+            valid: false,
+            error: `Invalid file type. Allowed extensions: ${allowedExtensions.join(', ')}`
+        };
+    }
+    
+    // Check for dangerous filename patterns
+    if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+        return {
+            valid: false,
+            error: 'Invalid filename: contains dangerous characters'
+        };
+    }
+    
+    // Check filename length
+    if (file.name.length > 100) {
+        return {
+            valid: false,
+            error: 'Filename too long (max 100 characters)'
+        };
+    }
+    
+    return { valid: true };
 }
 
 function setupDragAndDrop(uploadArea, fileInput) {

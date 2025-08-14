@@ -10,14 +10,21 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"printloop/internal/processor"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 )
 
 //go:embed www/*
 var wwwFiles embed.FS
+
+// isTestMode checks if we're running in test mode to skip CSRF validation
+func isTestMode() bool {
+	return testing.Testing()
+}
 
 // TemplateData holds data for template rendering
 type TemplateData struct {
@@ -31,16 +38,33 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate CSRF token for the form
+	csrfToken, err := GenerateCSRFToken()
+	if err != nil {
+		slog.Error("Failed to generate CSRF token:", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set CSRF token in cookie
+	SetCSRFTokenCookie(w, csrfToken)
+
 	// Determine language
 	lang := GetLanguageFromRequest(r)
 
 	// Get translations for the determined language
 	translations := GetTranslations(lang)
 
-	// Create template data
-	data := TemplateData{
-		Lang: lang,
-		T:    translations,
+	// Create template data with CSRF token
+	data := struct {
+		TemplateData
+		CSRFToken string
+	}{
+		TemplateData: TemplateData{
+			Lang: lang,
+			T:    translations,
+		},
+		CSRFToken: csrfToken,
 	}
 
 	// Read template file
@@ -124,53 +148,108 @@ func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error 
 func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.ProcessingRequest, error) {
 	var req processor.ProcessingRequest
 
-	const maxFileSize = 1024 * 1024 * 1024
-	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
+	// Validate CSRF token (skip in test mode)
+	if !isTestMode() {
+		csrfTokenFromCookie := GetCSRFTokenFromCookie(r)
+		if csrfTokenFromCookie == "" || !ValidateCSRFToken(r, csrfTokenFromCookie) {
+			return req, fmt.Errorf("invalid CSRF token")
+		}
+	}
 
-	err := r.ParseMultipartForm(1024 * 1024) // receive up to 1MB of form data
+	// Set stricter limits
+	r.Body = http.MaxBytesReader(w, r.Body, MaxFileSize)
+
+	err := r.ParseMultipartForm(MaxFormSize)
 	if err != nil {
 		return req, fmt.Errorf("form parsing error: %w", err)
 	}
 
-	iterationsS := r.FormValue("iterations")
+	// Validate iterations with bounds
+	iterationsS := SanitizeString(r.FormValue("iterations"))
 	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
 	if err != nil || req.Iterations <= 0 {
 		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
 	}
-	waitBedCooldownTempS := r.FormValue("waitBedCooldownTemp")
-	req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
-	if (err != nil || req.WaitBedCooldownTemp < 0) && waitBedCooldownTempS != "" {
-		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
+	if err := ValidateNumericInput(req.Iterations, 1, 9223372036854775807, "iterations"); err != nil {
+		return req, err
 	}
-	waitMinS := r.FormValue("wait_min")
-	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
-	if (err != nil || req.WaitMin < 0) && waitMinS != "" {
-		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
-	}
-	extraExtrudeS := r.FormValue("extra_extrude")
-	req.ExtraExtrude, err = strconv.ParseFloat(extraExtrudeS, 64)
-	if (err != nil || req.ExtraExtrude < 0) && extraExtrudeS != "" {
-		return req, fmt.Errorf("invalid extra_extrude value %v: %w", waitMinS, err)
-	}
-	req.Printer = r.FormValue("printer")
 
-	// Handle custom template if provided
+	// Validate wait bed cooldown temperature
+	waitBedCooldownTempS := SanitizeString(r.FormValue("waitBedCooldownTemp"))
+	if waitBedCooldownTempS != "" {
+		req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
+		if err != nil || req.WaitBedCooldownTemp < 0 {
+			return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
+		}
+		if err := ValidateNumericInput(req.WaitBedCooldownTemp, 0, 200, "wait bed cooldown temperature"); err != nil {
+			return req, err
+		}
+	}
+
+	// Validate wait time
+	waitMinS := SanitizeString(r.FormValue("wait_min"))
+	if waitMinS != "" {
+		req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
+		if err != nil || req.WaitMin < 0 {
+			return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
+		}
+		if err := ValidateNumericInput(req.WaitMin, 0, 60, "wait time"); err != nil {
+			return req, err
+		}
+	}
+
+	// Validate extra extrude
+	extraExtrudeS := SanitizeString(r.FormValue("extra_extrude"))
+	if extraExtrudeS != "" {
+		req.ExtraExtrude, err = strconv.ParseFloat(extraExtrudeS, 64)
+		if err != nil || req.ExtraExtrude < 0 {
+			return req, fmt.Errorf("invalid extra_extrude value %v: %w", extraExtrudeS, err)
+		}
+		if err := ValidateFloatInput(req.ExtraExtrude, 0.0, 10.0, "extra extrude"); err != nil {
+			return req, err
+		}
+	}
+
+	// Sanitize printer selection
+	req.Printer = SanitizeString(r.FormValue("printer"))
+
+	// Handle custom template if provided (sanitize but allow G-code syntax)
 	customTemplate := r.FormValue("custom_template")
 	if customTemplate != "" {
 		req.CustomTemplate = strings.TrimSpace(customTemplate)
+		// Basic validation for template length
+		if len(req.CustomTemplate) > 10000 {
+			return req, fmt.Errorf("custom template too long (max 10000 characters)")
+		}
 	}
 
+	// Handle file upload with validation
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		return req, fmt.Errorf("file retrieval error: %w", err)
 	}
 	defer file.Close()
 
-	timestamp := time.Now().Unix()
-	req.FileName = fmt.Sprintf("%d_%s", timestamp, header.Filename)
-	filepath := path.Join("files/uploads", req.FileName)
+	// Validate the uploaded file
+	if err := ValidateFileUpload(file, header); err != nil {
+		return req, fmt.Errorf("file validation failed: %w", err)
+	}
 
-	dst, err := os.Create(filepath)
+	// Generate safe filename
+	timestamp := time.Now().Unix()
+	// Sanitize the original filename and limit length
+	safeFilename := SanitizeFilename(header.Filename)
+	if len(safeFilename) > 100 {
+		ext := filepath.Ext(safeFilename)
+		name := strings.TrimSuffix(safeFilename, ext)
+		safeFilename = name[:100-len(ext)] + ext
+	}
+	req.FileName = fmt.Sprintf("%d_%s", timestamp, safeFilename)
+	
+	// Use filepath.Join to prevent path traversal
+	uploadPath := filepath.Join("files/uploads", req.FileName)
+
+	dst, err := os.Create(uploadPath)
 	if err != nil {
 		return req, fmt.Errorf("file creation failed: %w", err)
 	}
@@ -178,7 +257,7 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 
 	_, err = io.Copy(dst, file)
 	if err != nil {
-		_ = os.Remove(filepath)
+		_ = os.Remove(uploadPath)
 		return req, fmt.Errorf("file saving error: %w", err)
 	}
 	return req, nil

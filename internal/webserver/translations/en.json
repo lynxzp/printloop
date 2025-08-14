@@ -95,5 +95,16 @@
   "hint_extra_extrude": "When removing a part from the printer, some plastic may leak from the nozzle, which can cause under-extrusion on the first layer of the next part - this is a critical issue. To solve this, the printer will extrude additional filament before starting the next print.\n\nMonitor how part changes and first layer printing occur: if there's insufficient plastic at the start, increase this value; if too much, decrease it. If no plastic visually leaks during part changes, 0.2 is a reasonable value; if noticeable volume leaks, significantly increase extra extrusion for compensation.\n\nAdjust this value in cases of: high print temperature (very fluid plastic), large nozzle diameter, wet filament, long part change time (when waiting for bed cooling), and different filament types/colors with varying fluidity.",
   "hint_iterations": "How many times the printer will drop the part and start printing again.",
   "hint_wait_bed_cooldown": "After printing a part, if its base is very large, removing it will be nearly impossible. After bed cooling, in many cases the part removes much easier.\n\nHowever, this approach has drawbacks. Besides being slow, after several iterations of printing the same part in one location, it adheres more strongly to the bed, and cooling stops helping. Bambulab printers ignore cooling commands below 40 degrees.",
-  "hint_additional_wait_time": "If you need to cool below 40 degrees for Bambulab printers, the only option is to cool to 40 and then wait an additional constant time."
+  "hint_additional_wait_time": "If you need to cool below 40 degrees for Bambulab printers, the only option is to cool to 40 and then wait an additional constant time.",
+  "error_security_title": "Security Error",
+  "error_security_description": "A security-related error occurred while processing your request.",
+  "error_security_suggestion_refresh": "Refresh the page and try again",
+  "error_security_suggestion_cookies": "Ensure cookies are enabled in your browser",
+  "error_security_suggestion_filename": "Use a safe filename without special characters or path separators",
+  "error_security_suggestion_safe": "Only upload trusted files from known sources",
+  "error_file_validation_title": "File Validation Failed",
+  "error_file_validation_description": "The uploaded file failed security validation checks.",
+  "error_file_validation_suggestion_type": "Ensure the file has a valid G-code extension (.gcode, .gco, .g, .nc)",
+  "error_file_validation_suggestion_size": "Check that the file size is not too large (max 100MB)",
+  "error_file_validation_suggestion_content": "Verify the file contains valid G-code content"
 }
