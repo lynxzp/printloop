@@ -14,7 +14,11 @@
     <link rel="stylesheet" href="./www/style.css">
 </head>
 <body>
-<div class="app-container">
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="app-container"
+     role="main" 
+     id="main-content"
+     aria-label="{{.T.title}}">
     <!-- Language Switcher -->
     <div class="language-switcher">
         <a href="?lang=en" class="lang-link {{if eq .Lang "en"}}active{{end}}">EN</a>
@@ -74,15 +78,19 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
     </div>
 
     <!-- Error Panel -->
-    <div class="error-panel" id="errorPanel">
+    <div class="error-panel" id="errorPanel" 
+         role="alert" 
+         aria-labelledby="error-title" 
+         aria-describedby="errorMessage">
         <div class="error-header">
-            <button class="close-error" id="closeError">&times;</button>
-            <h2 class="error-title">{{.T.error_panel_title}}</h2>
+            <button class="close-error" id="closeError" 
+                    aria-label="Close error panel">&times;</button>
+            <h2 class="error-title" id="error-title">{{.T.error_panel_title}}</h2>
             <p class="error-subtitle">{{.T.error_panel_subtitle}}</p>
         </div>
         <div class="error-content">
             <div class="error-section">
-                <div class="error-message" id="errorMessage">
+                <div class="error-message" id="errorMessage" aria-live="assertive">
                     <!-- Error message content will be inserted here -->
                 </div>
             </div>
@@ -108,8 +116,10 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                         <button type="button" class="browse-button" onclick="document.getElementById('file').click()">
                             {{.T.choose_file}}
                         </button>
-                        <input type="file" id="file" name="file" required accept=".gcode">
-                        <div class="file-info" id="fileInfo"></div>
+                        <input type="file" id="file" name="file" required accept=".gcode,.gco,.g,.nc" 
+                               aria-label="{{.T.choose_file}}" 
+                               aria-describedby="fileInfo">
+                        <div class="file-info" id="fileInfo" aria-live="polite"></div>
                     </div>
                 </div>
 
@@ -118,7 +128,8 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                     <div class="form-group">
                         <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
                         <label for="printer_checkbox">{{.T.select_printer}}</label>
-                        <select id="printer" name="printer" class="form-select" required>
+                        <select id="printer" name="printer" class="form-select" required 
+                                aria-label="{{.T.select_printer}}">
                             <option value="A1 mini">A1 mini</option>
                         </select>
                         <button type="button" id="showTemplateBtn" class="template-button">{{.T.show_template}}</button>
@@ -152,7 +163,9 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             {{.T.iteration_number}}
                             <span class="hint-icon" data-hint="hint_iterations">?</span>
                         </label>
-                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
+                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required
+                               aria-label="{{.T.iteration_number}}" 
+                               aria-describedby="iterations_checkbox">
                         <span class="input-unit">{{.T.cycles}}</span>
                     </div>
                     <div class="form-group">
@@ -161,7 +174,9 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             {{.T.wait_bed_cooldown}}
                             <span class="hint-icon" data-hint="hint_wait_bed_cooldown">?</span>
                         </label>
-                        <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="20" max="80" value="40" required>
+                        <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="20" max="80" value="40" required
+                               aria-label="{{.T.wait_bed_cooldown}}"
+                               aria-describedby="waitBedCooldownTempCheckbox">
                         <span class="input-unit">°C</span>
                     </div>
                     <div class="form-group">

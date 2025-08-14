@@ -18,6 +18,7 @@ const (
 	ErrorTypeFileIO         ErrorType = "file_io"
 	ErrorTypeUpload         ErrorType = "upload"
 	ErrorTypeInternal       ErrorType = "internal"
+	ErrorTypeSecurity       ErrorType = "security"
 )
 
 // ErrorResponse represents a structured error response
@@ -49,6 +50,50 @@ func CategorizeErrorWithLang(err error, lang string) ErrorResponse {
 
 	errMsg := err.Error()
 	errMsgLower := strings.ToLower(errMsg)
+
+	// Security errors - handle these first as they're high priority
+	if strings.Contains(errMsgLower, "csrf") || strings.Contains(errMsgLower, "token") {
+		return ErrorResponse{
+			Type:        ErrorTypeSecurity,
+			Code:        "csrf_token_invalid",
+			Title:       GetTranslation(lang, "error_security_title"),
+			Description: GetTranslation(lang, "error_security_description"),
+			Details:     errMsg,
+			Suggestions: []string{
+				GetTranslation(lang, "error_security_suggestion_refresh"),
+				GetTranslation(lang, "error_security_suggestion_cookies"),
+			},
+		}
+	}
+
+	if strings.Contains(errMsgLower, "file validation") || strings.Contains(errMsgLower, "invalid file") {
+		return ErrorResponse{
+			Type:        ErrorTypeSecurity,
+			Code:        "file_validation_failed",
+			Title:       GetTranslation(lang, "error_file_validation_title"),
+			Description: GetTranslation(lang, "error_file_validation_description"),
+			Details:     errMsg,
+			Suggestions: []string{
+				GetTranslation(lang, "error_file_validation_suggestion_type"),
+				GetTranslation(lang, "error_file_validation_suggestion_size"),
+				GetTranslation(lang, "error_file_validation_suggestion_content"),
+			},
+		}
+	}
+
+	if strings.Contains(errMsgLower, "path traversal") || strings.Contains(errMsgLower, "dangerous") {
+		return ErrorResponse{
+			Type:        ErrorTypeSecurity,
+			Code:        "security_violation",
+			Title:       GetTranslation(lang, "error_security_title"),
+			Description: GetTranslation(lang, "error_security_description"),
+			Details:     errMsg,
+			Suggestions: []string{
+				GetTranslation(lang, "error_security_suggestion_filename"),
+				GetTranslation(lang, "error_security_suggestion_safe"),
+			},
+		}
+	}
 
 	// Template-related errors
 	if strings.Contains(errMsgLower, "template") || strings.Contains(errMsgLower, "parse") {
