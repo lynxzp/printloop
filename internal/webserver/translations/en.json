@@ -1,7 +1,7 @@
 {
   "title": "Continuous loop 3D printing",
   "important_notice": "IMPORTANT NOTICE:",
-  "important_notice_text": "Before trying big loop, print loop with 2 items and review result.",
+  "important_notice_text": "Before trying a big loop, print a loop with 2 items and review the result.",
   "drag_drop_text": "Drag and drop G-code files here",
   "or_click_browse": "or click to browse files",
   "choose_file": "Choose File",
