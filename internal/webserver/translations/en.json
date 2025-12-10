@@ -1,7 +1,7 @@
 {
   "title": "Continuous loop 3D printing",
   "important_notice": "IMPORTANT NOTICE:",
-  "important_notice_text": "This project is in beta version and has been tested with only one 3D model. Use with caution and ensure the printer is supervised during the first automatic model change.",
+  "important_notice_text": "Before trying a big loop, print a loop with 2 items and review the result.",
   "drag_drop_text": "Drag and drop G-code files here",
   "or_click_browse": "or click to browse files",
   "choose_file": "Choose File",
