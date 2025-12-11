@@ -111,7 +111,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                 </div>
 
                 <div class="form-section">
-                    <h3 class="section-title">{{.T.printer_selection}}</h3>
+                    <h3 class="section-title">{{.T.general_settings}}</h3>
                     <div class="form-group">
                         <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
                         <label for="printer_checkbox">{{.T.select_printer}}</label>
@@ -119,6 +119,16 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             <option value="A1 mini">A1 mini</option>
                         </select>
                         <button type="button" id="showTemplateBtn" class="template-button">{{.T.show_template}}</button>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
+                        <label for="iterations_checkbox">
+                            {{.T.iteration_number}}
+                            <span class="hint-icon" data-hint="hint_iterations">?</span>
+                        </label>
+                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="2" required>
+                        <span class="input-unit">{{.T.cycles}}</span>
                     </div>
 
                     <div class="form-section" id="templateSection" style="display: none;">
@@ -137,21 +147,12 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                 <div class="form-section">
                     <div class="form-group">
                         <div></div>
-                        <h3 class="section-title">{{.T.processing_parameters}}</h3>
+                        <h3 class="section-title">{{.T.additional_settings}}</h3>
                         <div></div>
                         <button type="button" id="editParametersBtn" class="template-button" data-edit-text="{{.T.edit}}" data-hide-text="{{.T.hide_parameters}}">{{.T.edit}}</button>
                     </div>
                     
                     <div class="parameters-container" id="parametersContainer" style="display: none;">
-                    <div class="form-group">
-                        <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
-                        <label for="iterations_checkbox">
-                            {{.T.iteration_number}}
-                            <span class="hint-icon" data-hint="hint_iterations">?</span>
-                        </label>
-                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="100" required>
-                        <span class="input-unit">{{.T.cycles}}</span>
-                    </div>
                     <div class="form-group">
                         <input type="checkbox" id="waitBedCooldownTempCheckbox" class="form-checkbox">
                         <label for="waitBedCooldownTempCheckbox">
