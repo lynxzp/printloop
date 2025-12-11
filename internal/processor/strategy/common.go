@@ -17,6 +17,7 @@ func findStartMarkerInWindow(window []string, markers []string, windowStartLine 
 				return &startMarkerMatch{begin: pos, end: pos}
 			}
 		}
+
 		return nil
 	}
 
@@ -26,6 +27,7 @@ func findStartMarkerInWindow(window []string, markers []string, windowStartLine 
 			return match
 		}
 	}
+
 	return nil
 }
 
@@ -45,6 +47,7 @@ func tryMatchMultilineStart(window []string, startIdx int, windowStartLine int64
 			if firstMarkerLine == -1 {
 				firstMarkerLine = currentLine
 			}
+
 			lastMarkerLine = currentLine
 			markerIdx++
 			windowIdx++
@@ -60,5 +63,6 @@ func tryMatchMultilineStart(window []string, startIdx int, windowStartLine int64
 	if markerIdx == len(markers) {
 		return &startMarkerMatch{begin: firstMarkerLine, end: lastMarkerLine}
 	}
+
 	return nil
 }

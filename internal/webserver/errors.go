@@ -66,6 +66,7 @@ func CategorizeErrorWithLang(err error, lang string) ErrorResponse {
 				},
 			}
 		}
+
 		return ErrorResponse{
 			Type:        ErrorTypeTemplate,
 			Code:        "template_parsing_error",
@@ -125,6 +126,7 @@ func CategorizeErrorWithLang(err error, lang string) ErrorResponse {
 				},
 			}
 		}
+
 		if strings.Contains(errMsgLower, "invalid") {
 			return ErrorResponse{
 				Type:        ErrorTypeValidation,
@@ -171,6 +173,7 @@ func CategorizeErrorWithLang(err error, lang string) ErrorResponse {
 				},
 			}
 		}
+
 		if strings.Contains(errMsgLower, "open") || strings.Contains(errMsgLower, "read") {
 			return ErrorResponse{
 				Type:        ErrorTypeFileIO,
@@ -230,7 +233,8 @@ func WriteErrorResponseWithLang(w http.ResponseWriter, err error, statusCode int
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	if jsonErr := json.NewEncoder(w).Encode(errorResp); jsonErr != nil {
+	jsonErr := json.NewEncoder(w).Encode(errorResp)
+	if jsonErr != nil {
 		// Fallback to plain text if JSON encoding fails
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Error: %v", err)

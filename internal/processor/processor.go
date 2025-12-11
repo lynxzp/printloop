@@ -26,7 +26,7 @@ type PrinterDefinition struct {
 		EndInitSectionStrategy  string
 		EndPrintSectionStrategy string
 	}
-	Parameters map[string]interface{}
+	Parameters map[string]any
 	Template   struct {
 		Code string
 	}
@@ -55,7 +55,7 @@ type ProcessingRequest struct {
 	CustomTemplate      string
 }
 
-// Factory function to create search strategies
+// CreateSearchStrategy is factory function to create search strategies
 func CreateSearchStrategy(strategyName string) (SearchStrategy, error) {
 	switch strategyName {
 	case "after_first_appear":
@@ -105,6 +105,7 @@ func isValidPrinterName(name string) bool {
 	if len(name) == 0 {
 		return false
 	}
+
 	for _, r := range name {
 		isLetter := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 		isDigit := r >= '0' && r <= '9'
@@ -114,13 +115,16 @@ func isValidPrinterName(name string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
 func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error) {
-	var printerDef *PrinterDefinition
-	var templateCode string
-	var err error
+	var (
+		printerDef   *PrinterDefinition
+		templateCode string
+		err          error
+	)
 
 	// If custom template is provided, parse it
 	if config.CustomTemplate != "" {
@@ -144,6 +148,7 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 		if err != nil {
 			return nil, fmt.Errorf("failed to load printer definition: %w", err)
 		}
+
 		templateCode = printerDef.Template.Code
 	}
 
@@ -167,6 +172,7 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 			if a > b {
 				return a
 			}
+
 			return b
 		},
 	}).Parse(templateCode)
@@ -186,6 +192,7 @@ func NewStreamingProcessor(config ProcessingRequest) (*StreamingProcessor, error
 // parseCustomTemplate parses a custom template in TOML format and extracts the template code
 func parseCustomTemplate(customTemplate string, printerName string) (*PrinterDefinition, string, error) {
 	var def PrinterDefinition
+
 	err := toml.Unmarshal([]byte(customTemplate), &def)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to parse custom template TOML: %w", err)
@@ -195,15 +202,19 @@ func parseCustomTemplate(customTemplate string, printerName string) (*PrinterDef
 	if len(def.Markers.EndInitSection) == 0 {
 		return nil, "", errors.New("custom template missing EndInitSection markers")
 	}
+
 	if len(def.Markers.EndPrintSection) == 0 {
 		return nil, "", errors.New("custom template missing EndPrintSection markers")
 	}
+
 	if def.SearchStrategy.EndInitSectionStrategy == "" {
 		return nil, "", errors.New("custom template missing EndInitSectionStrategy")
 	}
+
 	if def.SearchStrategy.EndPrintSectionStrategy == "" {
 		return nil, "", errors.New("custom template missing EndPrintSectionStrategy")
 	}
+
 	if def.Template.Code == "" {
 		return nil, "", errors.New("custom template missing Template.Code")
 	}
@@ -224,12 +235,14 @@ var printerConfigs embed.FS
 
 func loadPrinterDefinition(printerName string) (*PrinterDefinition, error) {
 	filename := "printers/" + printerName + ".toml"
+
 	data, err := printerConfigs.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
 	var def PrinterDefinition
+
 	err = toml.Unmarshal(data, &def)
 	if err != nil {
 		return &def, err
@@ -266,16 +279,17 @@ func normalizeParameters(def *PrinterDefinition) {
 // ProcessFile processes a file using true streaming with multiple passes
 func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	// Validate input first
-	if err := p.validateInput(); err != nil {
+	err := p.validateInput()
+	if err != nil {
 		return err
 	}
 
 	// Pass 1: Find marker positions and extract G-code coordinates
-	var err error
 	pos, err := p.findMarkerPositions(inputPath)
 	if err != nil {
 		return err
 	}
+
 	p.positions = *pos
 
 	// Open output file
@@ -289,7 +303,8 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	defer writer.Flush()
 
 	// Pass 2: Stream header (lines 0 to EndInitSectionLastLine inclusive)
-	if err := p.streamLinesRange(inputPath, writer, 0, p.positions.EndInitSectionLastLine, true); err != nil {
+	err = p.streamLinesRange(inputPath, writer, 0, p.positions.EndInitSectionLastLine, true)
+	if err != nil {
 		return fmt.Errorf("failed to stream header: %w", err)
 	}
 
@@ -297,24 +312,28 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	for i := range p.config.Iterations {
 		// Stream body (lines after EndInitSectionLastLine to before EndPrintSectionFirstLine)
 		if p.positions.EndInitSectionLastLine+1 < p.positions.EndPrintSectionFirstLine {
-			if err := p.streamLinesRange(inputPath, writer, p.positions.EndInitSectionLastLine+1, p.positions.EndPrintSectionFirstLine-1, false); err != nil {
+			err = p.streamLinesRange(inputPath, writer, p.positions.EndInitSectionLastLine+1, p.positions.EndPrintSectionFirstLine-1, false)
+			if err != nil {
 				return fmt.Errorf("failed to stream body for iteration %d: %w", i+1, err)
 			}
 		}
 
 		// Stream end marker lines (can be multiline now)
-		if err := p.streamLinesRange(inputPath, writer, p.positions.EndPrintSectionFirstLine, p.positions.EndPrintSectionLastLine, false); err != nil {
+		err = p.streamLinesRange(inputPath, writer, p.positions.EndPrintSectionFirstLine, p.positions.EndPrintSectionLastLine, false)
+		if err != nil {
 			return fmt.Errorf("failed to stream end marker for iteration %d: %w", i+1, err)
 		}
 
 		// Stream generated content
-		if err := p.streamGeneratedContent(writer, i+1); err != nil {
+		err = p.streamGeneratedContent(writer, i+1)
+		if err != nil {
 			return fmt.Errorf("failed to stream generated content for iteration %d: %w", i+1, err)
 		}
 	}
 
 	// Pass 4: Stream footer (lines after EndPrintSectionLastLine to EOF)
-	if err := p.streamLinesFromPosition(inputPath, writer, p.positions.EndPrintSectionLastLine+1); err != nil {
+	err = p.streamLinesFromPosition(inputPath, writer, p.positions.EndPrintSectionLastLine+1)
+	if err != nil {
 		return fmt.Errorf("failed to stream footer: %w", err)
 	}
 
@@ -369,11 +388,14 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 	}
 	defer file.Close()
 
+	var (
+		firstPrintX, firstPrintY, firstPrintZ *float64
+		lastPrintX, lastPrintY, lastPrintZ    *float64
+		currentZ                              *float64
+		firstPrintFound                       bool
+	)
+
 	scanner := bufio.NewScanner(file)
-	var firstPrintX, firstPrintY, firstPrintZ *float64
-	var lastPrintX, lastPrintY, lastPrintZ *float64
-	var currentZ *float64
-	var firstPrintFound bool
 	lineNum := int64(0)
 
 	for scanner.Scan() {
@@ -395,13 +417,16 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 					if coords.X != nil {
 						firstPrintX = coords.X
 					}
+
 					if coords.Y != nil {
 						firstPrintY = coords.Y
 					}
+
 					// Remember the Z that was active during this first print command
 					if currentZ != nil {
 						firstPrintZ = currentZ
 					}
+
 					firstPrintFound = true
 				}
 
@@ -409,9 +434,11 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 				if coords.X != nil {
 					lastPrintX = coords.X
 				}
+
 				if coords.Y != nil {
 					lastPrintY = coords.Y
 				}
+
 				// Remember the Z that was active during this print command
 				if currentZ != nil {
 					lastPrintZ = currentZ
@@ -422,27 +449,34 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 		lineNum++
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		return 0, 0, 0, 0, 0, 0, err
 	}
 
 	// Return coordinates with defaults if not found
 	var fx, fy, fz, lx, ly, lz float64
+
 	if firstPrintX != nil {
 		fx = *firstPrintX
 	}
+
 	if firstPrintY != nil {
 		fy = *firstPrintY
 	}
+
 	if firstPrintZ != nil {
 		fz = *firstPrintZ
 	}
+
 	if lastPrintX != nil {
 		lx = *lastPrintX
 	}
+
 	if lastPrintY != nil {
 		ly = *lastPrintY
 	}
+
 	if lastPrintZ != nil {
 		lz = *lastPrintZ
 	}
@@ -475,28 +509,32 @@ func (p *StreamingProcessor) parseGCodeLine(line string) *GCodeCoordinates {
 
 	// Extract X coordinate
 	if match := xRegex.FindStringSubmatch(trimmed); match != nil {
-		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+		val, err := strconv.ParseFloat(match[1], 64)
+		if err == nil {
 			coords.X = &val
 		}
 	}
 
 	// Extract Y coordinate
 	if match := yRegex.FindStringSubmatch(trimmed); match != nil {
-		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+		val, err := strconv.ParseFloat(match[1], 64)
+		if err == nil {
 			coords.Y = &val
 		}
 	}
 
 	// Extract Z coordinate
 	if match := zRegex.FindStringSubmatch(trimmed); match != nil {
-		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+		val, err := strconv.ParseFloat(match[1], 64)
+		if err == nil {
 			coords.Z = &val
 		}
 	}
 
 	// Extract E coordinate
 	if match := eRegex.FindStringSubmatch(trimmed); match != nil {
-		if val, err := strconv.ParseFloat(match[1], 64); err == nil {
+		val, err := strconv.ParseFloat(match[1], 64)
+		if err == nil {
 			coords.E = &val
 		}
 	}
@@ -532,12 +570,14 @@ func (p *StreamingProcessor) streamLinesRange(filePath string, writer *bufio.Wri
 		if processMarkerSplit {
 			splitLines := p.processLineWithMarkerSplit(line, p.printerDef.Markers.EndInitSection)
 			for _, splitLine := range splitLines {
-				if _, err := fmt.Fprintln(writer, splitLine); err != nil {
+				_, err = fmt.Fprintln(writer, splitLine)
+				if err != nil {
 					return err
 				}
 			}
 		} else {
-			if _, err := fmt.Fprintln(writer, line); err != nil {
+			_, err = fmt.Fprintln(writer, line)
+			if err != nil {
 				return err
 			}
 		}
@@ -567,7 +607,9 @@ func (p *StreamingProcessor) streamLinesFromPosition(filePath string, writer *bu
 	// Stream from position to EOF
 	for scanner.Scan() {
 		line := scanner.Text()
-		if _, err := fmt.Fprintln(writer, line); err != nil {
+
+		_, err = fmt.Fprintln(writer, line)
+		if err != nil {
 			return err
 		}
 	}
@@ -582,7 +624,7 @@ func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iterat
 		PrinterName string
 		Iteration   int64
 		Request     ProcessingRequest
-		Config      map[string]interface{}
+		Config      map[string]any
 		Positions   MarkerPositions
 	}{
 		PrinterName: p.printerDef.Name,
@@ -594,7 +636,9 @@ func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iterat
 
 	// Execute template
 	var output strings.Builder
-	if err := p.template.Execute(&output, templateData); err != nil {
+
+	err := p.template.Execute(&output, templateData)
+	if err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -602,7 +646,8 @@ func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iterat
 	lines := strings.Split(output.String(), "\n")
 	for _, line := range lines {
 		if line != "" || len(lines) == 1 { // Don't write empty lines unless it's the only line
-			if _, err := fmt.Fprintln(writer, line); err != nil {
+			_, err = fmt.Fprintln(writer, line)
+			if err != nil {
 				return err
 			}
 		}
@@ -620,12 +665,14 @@ func (p *StreamingProcessor) processLineWithMarkerSplit(line string, markers []s
 			if semicolonPos != -1 {
 				before := strings.TrimSpace(line[:semicolonPos])
 				after := strings.TrimSpace(line[semicolonPos:])
+
 				if before != "" && after != "" {
 					return []string{before, after}
 				}
 			}
 		}
 	}
+
 	return []string{line}
 }
 

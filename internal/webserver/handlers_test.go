@@ -69,6 +69,7 @@ func TestHomeHandler(t *testing.T) {
 			HomeHandler(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
+
 			if tt.checkResponse != nil {
 				tt.checkResponse(t, w)
 			}
@@ -81,7 +82,9 @@ func TestUploadHandler(t *testing.T) {
 	// Setup test directories
 	setupTestDirs := func(t *testing.T) {
 		t.Helper()
+
 		err := os.MkdirAll("files/uploads", 0755)
+
 		require.NoError(t, err)
 		err = os.MkdirAll("files/results", 0755)
 		require.NoError(t, err)
@@ -101,6 +104,7 @@ func TestUploadHandler(t *testing.T) {
 			setupRequest: func(_ *testing.T) *http.Request {
 				req := httptest.NewRequest("POST", "/upload", strings.NewReader("invalid"))
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
 				return req
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -114,13 +118,16 @@ func TestUploadHandler(t *testing.T) {
 			name: "missing file",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var buf bytes.Buffer
+
 				writer := multipart.NewWriter(&buf)
 				_ = writer.WriteField("iterations", "5")
 				_ = writer.Close()
 
 				req := httptest.NewRequest("POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
+
 				return req
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -134,6 +141,7 @@ func TestUploadHandler(t *testing.T) {
 			name: "invalid iterations",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "invalid",
 				})
@@ -149,7 +157,9 @@ func TestUploadHandler(t *testing.T) {
 			name: "large file within limit",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var buf bytes.Buffer
+
 				writer := multipart.NewWriter(&buf)
 				_ = writer.WriteField("iterations", "1")
 
@@ -162,6 +172,7 @@ func TestUploadHandler(t *testing.T) {
 
 				req := httptest.NewRequest("POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
+
 				return req
 			},
 			expectedStatus: http.StatusInternalServerError, // Will fail in processor
@@ -183,6 +194,7 @@ func TestUploadHandler(t *testing.T) {
 			UploadHandler(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
+
 			if tt.checkResponse != nil {
 				tt.checkResponse(t, w)
 			}
@@ -201,6 +213,7 @@ func TestSendResponse(t *testing.T) {
 			name: "valid file send",
 			setupFile: func(t *testing.T) processor.ProcessingRequest {
 				t.Helper()
+
 				err := os.MkdirAll("files/results", 0755)
 				require.NoError(t, err)
 				t.Cleanup(func() { os.RemoveAll("files") })
@@ -225,6 +238,7 @@ func TestSendResponse(t *testing.T) {
 			name: "file not found",
 			setupFile: func(t *testing.T) processor.ProcessingRequest {
 				t.Helper()
+
 				err := os.MkdirAll("files/results", 0755)
 				require.NoError(t, err)
 				t.Cleanup(func() { os.RemoveAll("files") })
@@ -237,6 +251,7 @@ func TestSendResponse(t *testing.T) {
 			name: "empty file",
 			setupFile: func(t *testing.T) processor.ProcessingRequest {
 				t.Helper()
+
 				err := os.MkdirAll("files/results", 0755)
 				require.NoError(t, err)
 				t.Cleanup(func() { os.RemoveAll("files") })
@@ -258,8 +273,10 @@ func TestSendResponse(t *testing.T) {
 			name: "special characters in filename",
 			setupFile: func(t *testing.T) processor.ProcessingRequest {
 				t.Helper()
+
 				err := os.MkdirAll("files/results", 0755)
 				require.NoError(t, err)
+
 				t.Cleanup(func() { os.RemoveAll("files") })
 
 				fileName := "test file with spaces & symbols.txt"
@@ -288,6 +305,7 @@ func TestSendResponse(t *testing.T) {
 
 			if tt.expectedStatus == http.StatusOK {
 				require.NoError(t, err)
+
 				if tt.checkResponse != nil {
 					tt.checkResponse(t, w, req)
 				}
@@ -302,7 +320,9 @@ func TestReceiveRequest(t *testing.T) {
 	t.Parallel()
 	setupTestDirs := func(t *testing.T) {
 		t.Helper()
+
 		err := os.MkdirAll("files/uploads", 0755)
+
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			os.RemoveAll("files")
@@ -336,6 +356,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "invalid iterations",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "invalid",
 				})
@@ -346,6 +367,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "zero iterations",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "0",
 				})
@@ -356,6 +378,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "invalid waitBedCooldownTemp",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":          "5",
 					"waitBedCooldownTemp": "invalid",
@@ -367,6 +390,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "negative waitBedCooldownTemp",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":          "5",
 					"waitBedCooldownTemp": "-1",
@@ -378,6 +402,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "invalid wait_min",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "5",
 					"wait_min":   "invalid",
@@ -389,6 +414,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "negative wait_min",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "5",
 					"wait_min":   "-1",
@@ -400,6 +426,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "invalid extra_extrude",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":    "5",
 					"extra_extrude": "invalid",
@@ -411,6 +438,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "negative extra_extrude",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":    "5",
 					"extra_extrude": "-1",
@@ -422,7 +450,9 @@ func TestReceiveRequest(t *testing.T) {
 			name: "missing file",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var buf bytes.Buffer
+
 				writer := multipart.NewWriter(&buf)
 
 				_ = writer.WriteField("iterations", "5")
@@ -430,6 +460,7 @@ func TestReceiveRequest(t *testing.T) {
 
 				req := httptest.NewRequest("POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
+
 				return req
 			},
 			expectedError: true,
@@ -438,6 +469,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "empty optional fields",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":          "5",
 					"waitBedCooldownTemp": "",
@@ -460,6 +492,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "custom template with whitespace",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations":      "5",
 					"custom_template": "  \n  G1 X10 Y10  \n  G1 Z5  \n  ",
@@ -475,6 +508,7 @@ func TestReceiveRequest(t *testing.T) {
 			name: "very large iterations",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createUploadRequestWithParams(t, map[string]string{
 					"iterations": "9223372036854775807", // max int64
 				})
@@ -489,17 +523,21 @@ func TestReceiveRequest(t *testing.T) {
 			name: "filename with special characters",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var buf bytes.Buffer
+
 				writer := multipart.NewWriter(&buf)
 				_ = writer.WriteField("iterations", "5")
 
 				part, err := writer.CreateFormFile("file", "test file with spaces & symbols.gcode")
 				require.NoError(t, err)
+
 				_, _ = part.Write([]byte("test content"))
 				_ = writer.Close()
 
 				req := httptest.NewRequest("POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
+
 				return req
 			},
 			expectedError: false,
@@ -523,6 +561,7 @@ func TestReceiveRequest(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+
 				if tt.validateReq != nil {
 					tt.validateReq(t, result)
 				}
@@ -611,12 +650,14 @@ func TestTemplateHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			req := httptest.NewRequest(tt.method, "/template"+tt.queryParams, nil)
 			w := httptest.NewRecorder()
 
 			TemplateHandler(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
+
 			if tt.checkResponse != nil {
 				tt.checkResponse(t, w)
 			}
@@ -626,6 +667,7 @@ func TestTemplateHandler(t *testing.T) {
 
 func TestFormatStringSlice(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    []string
@@ -671,7 +713,9 @@ func TestFormatStringSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			result := formatStringSlice(tt.input)
+
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -679,9 +723,10 @@ func TestFormatStringSlice(t *testing.T) {
 
 func TestFormatValue(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected string
 	}{
 		{
@@ -759,7 +804,9 @@ func TestFormatValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			result := formatValue(tt.input)
+
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -768,6 +815,7 @@ func TestFormatValue(t *testing.T) {
 // Test the StaticFileServer function
 func TestStaticFileServer(t *testing.T) {
 	t.Parallel()
+
 	handler := StaticFileServer()
 	assert.NotNil(t, handler)
 
@@ -788,6 +836,7 @@ func TestStaticFileServer(t *testing.T) {
 
 func createValidUploadRequest(t *testing.T) *http.Request {
 	t.Helper()
+
 	return createUploadRequestWithParams(t, map[string]string{
 		"iterations":          "5",
 		"waitBedCooldownTemp": "200",
@@ -799,9 +848,10 @@ func createValidUploadRequest(t *testing.T) *http.Request {
 
 func createUploadRequestWithParams(t *testing.T, params map[string]string) *http.Request {
 	t.Helper()
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
 
+	var buf bytes.Buffer
+
+	writer := multipart.NewWriter(&buf)
 	// Add form fields
 	for key, value := range params {
 		_ = writer.WriteField(key, value)
@@ -811,6 +861,7 @@ func createUploadRequestWithParams(t *testing.T, params map[string]string) *http
 	if _, exists := params["no_file"]; !exists {
 		part, err := writer.CreateFormFile("file", "test.txt")
 		require.NoError(t, err)
+
 		_, _ = part.Write([]byte("test file content"))
 	}
 
@@ -818,5 +869,6 @@ func createUploadRequestWithParams(t *testing.T, params map[string]string) *http
 
 	req := httptest.NewRequest("POST", "/upload", &buf)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
 	return req
 }

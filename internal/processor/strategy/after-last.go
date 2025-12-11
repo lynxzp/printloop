@@ -1,4 +1,3 @@
-// file: internal/processor/strategy/after-last.go
 package strategy
 
 import (
@@ -20,11 +19,14 @@ func (s *AfterLastAppearStrategy) FindInitSectionPosition(filePath string, marke
 
 	// Read all lines into memory for easier processing
 	var lines []string
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
+
+	err = scanner.Err()
+	if err != nil {
 		return 0, 0, err
 	}
 
@@ -66,11 +68,14 @@ func (s *AfterLastAppearStrategy) FindPrintSectionPosition(filePath string, mark
 
 	// Read all lines into memory for easier processing
 	var lines []string
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
+
+	err = scanner.Err()
+	if err != nil {
 		return 0, 0, err
 	}
 
@@ -130,5 +135,6 @@ func (s *AfterLastAppearStrategy) tryMatchMultilinePattern(lines []string, start
 			end:   int64(linePos - 1),
 		}
 	}
+
 	return nil
 }

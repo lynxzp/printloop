@@ -12,6 +12,7 @@ import (
 // Test core logic with simple string slices (no I/O) using the new streaming processor
 func TestStreamingProcessor_ProcessStream(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name        string
 		input       []string
@@ -418,7 +419,8 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 			outputPath := filepath.Join(tempDir, "output.txt")
 
 			// Write input file
-			if err := writeLinesToFile(inputPath, tt.input); err != nil {
+			err := writeLinesToFile(inputPath, tt.input)
+			if err != nil {
 				t.Fatalf("Failed to write input file: %v", err)
 			}
 
@@ -427,12 +429,14 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				Iterations: 2, // Based on expected outputs showing 2 iterations
 				Printer:    tt.printerName,
 			}
+
 			processor, err := NewStreamingProcessor(config)
 			if err != nil {
 				if tt.expectError {
 					// If we expect an error and got one during processor creation, that's also valid
 					return
 				}
+
 				t.Fatalf("Failed to create processor: %v", err)
 			}
 
@@ -444,6 +448,7 @@ func TestStreamingProcessor_ProcessStream(t *testing.T) {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
+
 				return
 			}
 
@@ -479,7 +484,8 @@ func writeLinesToFile(filePath string, lines []string) error {
 	defer writer.Flush()
 
 	for _, line := range lines {
-		if _, err := writer.WriteString(line + "\n"); err != nil {
+		_, err = writer.WriteString(line + "\n")
+		if err != nil {
 			return err
 		}
 	}
@@ -496,6 +502,7 @@ func readLinesFromFile(filePath string) ([]string, error) {
 	defer file.Close()
 
 	var lines []string
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
@@ -509,11 +516,13 @@ func equalStringSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -527,6 +536,7 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 		Iterations: 1,
 		Printer:    "unit-tests",
 	}
+
 	p, err := NewStreamingProcessor(config)
 	if err != nil {
 		t.Fatalf("Failed to create processor: %v", err)
@@ -697,17 +707,20 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			result := p.parseGCodeLine(tt.input)
 
 			if tt.expected == nil {
 				if result != nil {
 					t.Errorf("Expected nil, got %+v", result)
 				}
+
 				return
 			}
 
 			if result == nil {
 				t.Errorf("Expected %+v, got nil", tt.expected)
+
 				return
 			}
 
@@ -744,6 +757,7 @@ func TestStreamingProcessor_parseGCodeLine(t *testing.T) {
 
 func TestStreamingProcessor_findMarkerPositions_LastPrintCoordinates(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name         string
 		gcodeContent string
@@ -923,9 +937,11 @@ M625`,
 			defer os.Remove(tmpFile.Name())
 			defer tmpFile.Close()
 
-			if _, err := tmpFile.WriteString(tt.gcodeContent); err != nil {
+			_, err = tmpFile.WriteString(tt.gcodeContent)
+			if err != nil {
 				t.Fatalf("Failed to write test content: %v", err)
 			}
+
 			tmpFile.Close()
 
 			// Create processor with test configuration
@@ -933,6 +949,7 @@ M625`,
 				Iterations: 1,
 				Printer:    "unit-tests-gcode2",
 			}
+
 			processor, err := NewStreamingProcessor(config)
 			if err != nil {
 				t.Fatalf("Failed to create processor: %v", err)
@@ -945,6 +962,7 @@ M625`,
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
+
 				return
 			}
 

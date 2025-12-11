@@ -48,6 +48,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error reading index_template.html:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -56,13 +57,17 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Error parsing template:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tmpl.Execute(w, data); err != nil {
+
+	err = tmpl.Execute(w, data)
+	if err != nil {
 		slog.Error("Error executing template:", "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+
 		return
 	}
 }
@@ -78,8 +83,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Failed to receive request", "error", err)
 		WriteErrorResponseWithLang(w, err, http.StatusBadRequest, lang)
+
 		return
 	}
+
 	inFileName := path.Join("files/uploads", req.FileName)
 	outFileName := path.Join("files/results", req.FileName)
 
@@ -90,6 +97,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Request processing failed", "error", err)
 		WriteErrorResponseWithLang(w, err, http.StatusInternalServerError, lang)
+
 		return
 	}
 
@@ -97,6 +105,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Failed to send response", "error", err)
 		WriteErrorResponseWithLang(w, err, http.StatusInternalServerError, lang)
+
 		return
 	}
 
@@ -106,6 +115,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", req.FileName))
 	w.Header().Set("Content-Type", "application/octet-stream")
+
 	fileName := path.Join("files/results", req.FileName)
 
 	file, err := os.Open(fileName)
@@ -118,6 +128,7 @@ func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error 
 	if err != nil {
 		return fmt.Errorf("failed writing response: %w", err)
 	}
+
 	return nil
 }
 
@@ -125,6 +136,7 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	var req processor.ProcessingRequest
 
 	const maxFileSize = 1024 * 1024 * 1024
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxFileSize)
 
 	err := r.ParseMultipartForm(1024 * 1024) // receive up to 1MB of form data
@@ -133,25 +145,34 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	}
 
 	iterationsS := r.FormValue("iterations")
+
 	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
+
 	if err != nil || req.Iterations <= 0 {
 		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
 	}
+
 	waitBedCooldownTempS := r.FormValue("waitBedCooldownTemp")
+
 	req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
 	if (err != nil || req.WaitBedCooldownTemp < 0) && waitBedCooldownTempS != "" {
 		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
 	}
+
 	waitMinS := r.FormValue("wait_min")
+
 	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
 	if (err != nil || req.WaitMin < 0) && waitMinS != "" {
 		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
 	}
+
 	extraExtrudeS := r.FormValue("extra_extrude")
+
 	req.ExtraExtrude, err = strconv.ParseFloat(extraExtrudeS, 64)
 	if (err != nil || req.ExtraExtrude < 0) && extraExtrudeS != "" {
 		return req, fmt.Errorf("invalid extra_extrude value %v: %w", waitMinS, err)
 	}
+
 	req.Printer = r.FormValue("printer")
 
 	// Handle custom template if provided
@@ -181,6 +202,7 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 		_ = os.Remove(filepath)
 		return req, fmt.Errorf("file saving error: %w", err)
 	}
+
 	return req, nil
 }
 
@@ -228,9 +250,11 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	// Write Parameters section
 	if len(printerDef.Parameters) > 0 {
 		buf.WriteString("[Parameters]\n")
+
 		for key, value := range printerDef.Parameters {
 			fmt.Fprintf(&buf, "%s = %v\n", key, formatValue(value))
 		}
+
 		buf.WriteString("\n")
 	}
 
@@ -238,9 +262,11 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	buf.WriteString("[Template]\n")
 	buf.WriteString("Code = \"\"\"\n")
 	buf.WriteString(printerDef.Template.Code)
+
 	if !strings.HasSuffix(printerDef.Template.Code, "\n") {
 		buf.WriteString("\n")
 	}
+
 	buf.WriteString("\"\"\"\n")
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -251,17 +277,20 @@ func formatStringSlice(slice []string) string {
 	if len(slice) == 0 {
 		return "[]"
 	}
+
 	if len(slice) == 1 {
 		return fmt.Sprintf("[%q]", slice[0])
 	}
+
 	parts := make([]string, 0, len(slice))
 	for _, s := range slice {
 		parts = append(parts, fmt.Sprintf("%q", s))
 	}
+
 	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
 }
 
-func formatValue(v interface{}) string {
+func formatValue(v any) string {
 	switch val := v.(type) {
 	case string:
 		return fmt.Sprintf("%q", val)

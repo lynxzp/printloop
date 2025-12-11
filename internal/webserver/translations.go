@@ -27,10 +27,14 @@ func LoadTranslations() error {
 	if err != nil {
 		return err
 	}
+
 	var enTrans Translation
-	if err := json.Unmarshal(enData, &enTrans); err != nil {
+
+	err = json.Unmarshal(enData, &enTrans)
+	if err != nil {
 		return err
 	}
+
 	translations["en"] = enTrans
 
 	// Load Ukrainian translations
@@ -38,10 +42,14 @@ func LoadTranslations() error {
 	if err != nil {
 		return err
 	}
+
 	var ukTrans Translation
-	if err := json.Unmarshal(ukData, &ukTrans); err != nil {
+
+	err = json.Unmarshal(ukData, &ukTrans)
+	if err != nil {
 		return err
 	}
+
 	translations["uk"] = ukTrans
 
 	return nil
@@ -61,8 +69,7 @@ func GetLanguageFromRequest(r *http.Request) string {
 	if acceptLang != "" {
 		// Parse Accept-Language header (simplified version)
 		// Format: "en-US,en;q=0.9,uk;q=0.8"
-		langs := strings.Split(acceptLang, ",")
-		for _, lang := range langs {
+		for lang := range strings.SplitSeq(acceptLang, ",") {
 			// Remove quality values and extra parameters
 			lang = strings.TrimSpace(strings.Split(lang, ";")[0])
 			// Extract main language code
@@ -70,6 +77,7 @@ func GetLanguageFromRequest(r *http.Request) string {
 			if lang == "ru" {
 				return "uk"
 			}
+
 			if isValidLanguage(lang) {
 				return lang
 			}

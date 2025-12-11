@@ -13,6 +13,7 @@ import (
 
 type compressResponseWriter struct {
 	http.ResponseWriter
+
 	writer io.Writer
 }
 
@@ -25,21 +26,29 @@ func CompressionMiddleware(next http.Handler) http.Handler {
 		// Check Accept-Encoding header
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 
-		var writer io.Writer
-		var encoding string
+		var (
+			writer   io.Writer
+			encoding string
+		)
 
 		if strings.Contains(acceptEncoding, "zstd") {
 			w.Header().Set("Content-Encoding", "zstd")
+
 			encoder, _ := zstd.NewWriter(w,
 				zstd.WithEncoderLevel(zstd.SpeedBetterCompression),
 				zstd.WithWindowSize(1<<23))
+
 			defer encoder.Close()
+
 			writer = encoder
 			encoding = "zstd"
 		} else if strings.Contains(acceptEncoding, "gzip") {
 			w.Header().Set("Content-Encoding", "gzip")
+
 			gz := gzip.NewWriter(w)
+
 			defer gz.Close()
+
 			writer = gz
 			encoding = "gzip"
 		}

@@ -8,6 +8,7 @@ import (
 
 func TestAfterFirstAppearStrategy(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name               string
 		fileContent        []string
@@ -283,10 +284,12 @@ func TestAfterFirstAppearStrategy(t *testing.T) {
 			}
 
 			for _, line := range tt.fileContent {
-				if _, err := file.WriteString(line + "\n"); err != nil {
+				_, err = file.WriteString(line + "\n")
+				if err != nil {
 					t.Fatalf("Failed to write test content: %v", err)
 				}
 			}
+
 			file.Close()
 
 			strategy := &AfterFirstAppearStrategy{}
@@ -305,6 +308,7 @@ func TestAfterFirstAppearStrategy(t *testing.T) {
 					if initFirst != tt.expectedInitFirst {
 						t.Errorf("Init first line: expected %d, got %d", tt.expectedInitFirst, initFirst)
 					}
+
 					if initLast != tt.expectedInitLast {
 						t.Errorf("Init last line: expected %d, got %d", tt.expectedInitLast, initLast)
 					}
@@ -314,13 +318,13 @@ func TestAfterFirstAppearStrategy(t *testing.T) {
 			// Test FindPrintSectionPosition
 			if !tt.expectInitError && !tt.expectPrintError {
 				printFirst, printLast, printErr := strategy.FindPrintSectionPosition(testFile, tt.printMarkers, tt.searchFromLine)
-
 				if printErr != nil {
 					t.Errorf("Unexpected print error: %v", printErr)
 				} else {
 					if printFirst != tt.expectedPrintFirst {
 						t.Errorf("Print first line: expected %d, got %d", tt.expectedPrintFirst, printFirst)
 					}
+
 					if printLast != tt.expectedPrintLast {
 						t.Errorf("Print last line: expected %d, got %d", tt.expectedPrintLast, printLast)
 					}
