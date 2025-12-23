@@ -531,6 +531,14 @@ h1 {
     gap: 12px;
 }
 
+.form-group.form-group-select {
+    grid-template-columns: auto 4fr 1fr;
+}
+
+.form-group.form-group-select > .form-select {
+    grid-column: 3 / -1;
+}
+
 .form-group.template-button-group {
     grid-template-columns: 1fr;
     justify-items: end;
@@ -946,6 +954,14 @@ input[type="number"]:focus {
         gap: 8px;
     }
 
+    .form-group.form-group-select {
+        grid-template-columns: auto 1fr 80px;
+    }
+
+    .form-group.form-group-select > .form-select {
+        grid-column: 3 / -1;
+    }
+
     .form-group.template-button-group {
         grid-template-columns: 1fr;
         justify-items: stretch;
@@ -988,6 +1004,15 @@ input[type="number"]:focus {
     .form-group {
         grid-template-columns: auto 1fr;
         gap: 8px;
+    }
+
+    .form-group.form-group-select {
+        grid-template-columns: auto 1fr;
+    }
+
+    .form-group.form-group-select > .form-select {
+        grid-column: auto;
+        width: 100%;
     }
 
     .form-group > label {
