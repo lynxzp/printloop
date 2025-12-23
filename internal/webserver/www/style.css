@@ -522,6 +522,17 @@ h1 {
     background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
+.section-title.additional-settings-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    flex: 1 1 auto;
+}
+
+.section-title.additional-settings-title::after {
+    display: none;
+}
+
 .form-group {
     margin-bottom: 10px;
     margin-top: 10px;
@@ -529,6 +540,30 @@ h1 {
     grid-template-columns: auto 4fr 1fr 1fr;
     align-items: center;
     gap: 12px;
+}
+
+.form-group.form-group-with-button {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-group.form-group-with-button > .form-checkbox {
+    flex: 0 0 auto;
+}
+
+.form-group.form-group-with-button > label {
+    flex: 0 0 auto;
+}
+
+.form-group.form-group-with-button > .form-select {
+    flex: 1 1 200px;
+    min-width: 150px;
+}
+
+.form-group.form-group-with-button > .template-button {
+    flex: 0 1 auto;
 }
 
 .form-group input[type="number"] {
@@ -555,6 +590,8 @@ label {
     font-size: 0.95rem;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
     cursor: pointer;
     transition: color 0.3s ease;
 }
@@ -788,15 +825,9 @@ input[type="number"]:focus {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    width: 100%;
+    width: auto;
+    min-width: 126px;
     font-family: inherit;
-    justify-self: stretch;
-}
-
-/* When template button is in a form-group grid, make it fit content instead of full width */
-.form-group .template-button {
-    width: 126px;
-    justify-self: end;
 }
 
 .template-button:hover {
@@ -945,6 +976,31 @@ input[type="number"]:focus {
         gap: 8px;
     }
 
+    .form-group.form-group-with-button {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .form-group.form-group-with-button > .form-select {
+        flex: 1 1 150px;
+        min-width: 120px;
+    }
+
+    .form-group.form-group-with-button > .template-button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .form-group.template-button-group {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+    }
+
+    .form-group.template-button-group .template-button {
+        width: 100%;
+    }
+
     input[type="number"], .form-select {
         width: 80px;
         padding: 8px 10px;
@@ -976,13 +1032,42 @@ input[type="number"]:focus {
 
 @media (max-width: 480px) {
     .form-group {
-        grid-template-columns: 1fr;
-        gap: 6px;
-        text-align: left;
+        grid-template-columns: auto 1fr;
+        gap: 8px;
     }
 
-    .form-group > * {
+    .form-group.form-group-with-button {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .form-group.form-group-with-button > .form-select {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .form-group.form-group-with-button > .template-button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .form-group > label {
+        grid-column: 1 / -1;
+    }
+
+    .form-group > input[type="number"],
+    .form-group > .form-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .form-group > .input-unit {
         justify-self: start;
+    }
+
+    .form-group.template-button-group {
+        grid-template-columns: 1fr;
     }
 
     .upload-area p {
@@ -992,10 +1077,6 @@ input[type="number"]:focus {
     .browse-button {
         padding: 8px 20px;
         font-size: 0.9rem;
-    }
-
-    input[type="number"], .form-select {
-        width: 80px;
     }
 }
 
@@ -1050,20 +1131,21 @@ input[type="number"]:focus {
 /* Hint System Styles */
 .hint-icon {
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
     text-align: center;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border-radius: 50%;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
     cursor: pointer;
     margin-left: 6px;
     transition: all 0.3s ease;
     user-select: none;
     font-family: Arial, sans-serif;
+    flex-shrink: 0;
 }
 
 .hint-icon:hover {
@@ -1182,12 +1264,5 @@ input[type="number"]:focus {
     .hint-popup-body {
         padding: 10px 20px 20px 20px;
         font-size: 0.9rem;
-    }
-    
-    .hint-icon {
-        width: 18px;
-        height: 18px;
-        line-height: 18px;
-        font-size: 12px;
     }
 }
