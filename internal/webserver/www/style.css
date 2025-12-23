@@ -522,6 +522,17 @@ h1 {
     background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
+.section-title.additional-settings-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    flex: 1 1 auto;
+}
+
+.section-title.additional-settings-title::after {
+    display: none;
+}
+
 .form-group {
     margin-bottom: 10px;
     margin-top: 10px;
