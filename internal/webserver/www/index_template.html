@@ -112,15 +112,12 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
 
                 <div class="form-section">
                     <h3 class="section-title">{{.T.general_settings}}</h3>
-                    <div class="form-group form-group-select">
+                    <div class="form-group form-group-with-button">
                         <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
                         <label for="printer_checkbox">{{.T.select_printer}}</label>
                         <select id="printer" name="printer" class="form-select" required>
                             <option value="A1 mini">A1 mini</option>
                         </select>
-                    </div>
-
-                    <div class="form-group template-button-group">
                         <button type="button" id="showTemplateBtn" class="template-button">{{.T.show_template}}</button>
                     </div>
 

@@ -531,17 +531,28 @@ h1 {
     gap: 12px;
 }
 
-.form-group.form-group-select {
-    grid-template-columns: auto 4fr 1fr;
+.form-group.form-group-with-button {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
 }
 
-.form-group.form-group-select > .form-select {
-    grid-column: 3 / -1;
+.form-group.form-group-with-button > .form-checkbox {
+    flex: 0 0 auto;
 }
 
-.form-group.template-button-group {
-    grid-template-columns: 1fr;
-    justify-items: end;
+.form-group.form-group-with-button > label {
+    flex: 0 0 auto;
+}
+
+.form-group.form-group-with-button > .form-select {
+    flex: 1 1 200px;
+    min-width: 150px;
+}
+
+.form-group.form-group-with-button > .template-button {
+    flex: 0 1 auto;
 }
 
 .form-group input[type="number"] {
@@ -954,12 +965,20 @@ input[type="number"]:focus {
         gap: 8px;
     }
 
-    .form-group.form-group-select {
-        grid-template-columns: auto 1fr 80px;
+    .form-group.form-group-with-button {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    .form-group.form-group-select > .form-select {
-        grid-column: 3 / -1;
+    .form-group.form-group-with-button > .form-select {
+        flex: 1 1 150px;
+        min-width: 120px;
+    }
+
+    .form-group.form-group-with-button > .template-button {
+        flex: 1 1 100%;
+        width: 100%;
     }
 
     .form-group.template-button-group {
@@ -1006,12 +1025,19 @@ input[type="number"]:focus {
         gap: 8px;
     }
 
-    .form-group.form-group-select {
-        grid-template-columns: auto 1fr;
+    .form-group.form-group-with-button {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    .form-group.form-group-select > .form-select {
-        grid-column: auto;
+    .form-group.form-group-with-button > .form-select {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .form-group.form-group-with-button > .template-button {
+        flex: 1 1 100%;
         width: 100%;
     }
 
