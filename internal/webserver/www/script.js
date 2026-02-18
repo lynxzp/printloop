@@ -151,7 +151,7 @@ function handleCustomFormSubmit(event) {
     return false;
 }
 
-function submitForm(useCustomTemplate) {
+async function submitForm(useCustomTemplate) {
     const submitBtn = document.getElementById('submitBtn');
     const customSubmitBtn = document.getElementById('submitCustomBtn');
     const loading = document.getElementById('loading');
@@ -180,16 +180,31 @@ function submitForm(useCustomTemplate) {
 
     // Add file
     const fileInput = document.getElementById('file');
-    if (fileInput.files[0]) {
-        formData.append('file', fileInput.files[0]);
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showError(window.i18n?.noFile || 'Please select a file first');
+        resetSubmitButtons();
+        return;
     }
+
+    // Verify file is still readable before uploading
+    try {
+        await verifyFileReadable(file);
+    } catch (err) {
+        showError(window.i18n?.fileNotAccessible || 'The selected file is no longer accessible. Please select the file again.');
+        resetSubmitButtons();
+        return;
+    }
+
+    formData.append('file', file);
 
     if (useCustomTemplate) {
         const templateContent = document.getElementById('templateContent');
         if (templateContent && templateContent.value.trim()) {
             formData.append('custom_template', templateContent.value);
         } else {
-            showError('Template content is empty. Please edit the template or use the standard processing button.');
+            showError(window.i18n?.templateEmpty || 'Template content is empty. Please edit the template or use the standard processing button.');
             resetSubmitButtons();
             return;
         }
@@ -213,10 +228,9 @@ function submitForm(useCustomTemplate) {
         }
     });
 
-    // Get current language from URL for error messages (only if explicitly set)
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentLang = urlParams.get('lang');
-    const uploadUrl = currentLang ? `./upload?lang=${encodeURIComponent(currentLang)}` : './upload';
+    // Get current language from HTML lang attribute (set by server based on Accept-Language or URL param)
+    const currentLang = document.documentElement.lang || 'en';
+    const uploadUrl = `./upload?lang=${encodeURIComponent(currentLang)}`;
 
     fetch(uploadUrl, {
         method: 'POST',
@@ -291,6 +305,16 @@ function submitForm(useCustomTemplate) {
             }
             resetSubmitButtons();
         });
+}
+
+function verifyFileReadable(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        const slice = file.slice(0, 1);
+        reader.onload = () => resolve();
+        reader.onerror = () => reject(new Error('File not readable'));
+        reader.readAsArrayBuffer(slice);
+    });
 }
 
 function handleFileSelect(event) {
@@ -495,7 +519,7 @@ function showTemplate() {
     const printerName = printerSelect.value;
 
     if (!printerName) {
-        showError('Please select a printer first');
+        showError(window.i18n?.selectPrinter || 'Please select a printer first');
         return;
     }
 
