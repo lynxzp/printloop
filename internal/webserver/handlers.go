@@ -181,6 +181,9 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 		req.CustomTemplate = strings.TrimSpace(customTemplate)
 	}
 
+	// Handle test print with pause option
+	req.TestPrintWithPause = r.FormValue("test_print_pause") == "true"
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		return req, fmt.Errorf("file retrieval error: %w", err)

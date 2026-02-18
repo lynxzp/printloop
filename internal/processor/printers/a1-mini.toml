@@ -30,9 +30,10 @@ Code = """
 ======================================================================
 ; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
 G1 E-{{.Config.RetractDistance}}
-{{if gt .Request.WaitBedCooldownTemp 0}}M190 R{{.Request.WaitBedCooldownTemp}} ; Set wait bed temperature{{end}}
-{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout{{end}}
 G1 Y{{.Config.BackY}} ; Move back
+{{if .Request.TestPrintWithPause}}M400 U1 ; Pause for inspection - resume from printer screen {{end}}
+{{if gt .Request.WaitBedCooldownTemp 0}}M190 R{{.Request.WaitBedCooldownTemp}} ; Set wait bed temperature {{end}}
+{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout {{end}}
 G1 X{{printf "%.2f" .Positions.LastPrintX}} ; Move to last print X position
 G1 Z{{printf "%.2f" (max (sub .Positions.LastPrintZ .Config.MoveDownBeforePush) .Config.MinZ)}} ; Move to Z position
 G1 Y{{.Config.PushY}}; Push printed item

@@ -4,7 +4,7 @@ PLATFORM := linux/amd64
 .DEFAULT_GOAL := all
 
 test:
-	go test -race ./...
+	go test -race -count=1 ./...
 
 lint:
 	golangci-lint run

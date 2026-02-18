@@ -53,6 +53,7 @@ type ProcessingRequest struct {
 	ExtraExtrude        float64
 	Printer             string
 	CustomTemplate      string
+	TestPrintWithPause  bool
 }
 
 // CreateSearchStrategy is factory function to create search strategies

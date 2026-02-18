@@ -216,15 +216,24 @@ async function submitForm(useCustomTemplate) {
         { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
         { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
         { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
-        { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' }
+        { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' },
+        { checkboxId: 'test_print_pause_checkbox', inputId: null, name: 'test_print_pause', isBoolean: true }
     ];
 
     checkboxConfigs.forEach(config => {
         const checkbox = document.getElementById(config.checkboxId);
-        const input = document.getElementById(config.inputId);
 
-        if (checkbox && checkbox.checked && input) {
-            formData.append(config.name, input.value);
+        if (config.isBoolean) {
+            // Boolean checkbox - send "true" if checked
+            if (checkbox && checkbox.checked) {
+                formData.append(config.name, 'true');
+            }
+        } else {
+            // Regular checkbox with associated input
+            const input = document.getElementById(config.inputId);
+            if (checkbox && checkbox.checked && input) {
+                formData.append(config.name, input.value);
+            }
         }
     });
 
