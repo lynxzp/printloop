@@ -125,7 +125,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
 
                 <div class="form-section">
                     <h3 class="section-title">{{.T.general_settings}}</h3>
-                    <div class="form-group form-group-with-button">
+                    <div class="form-group">
                         <input type="checkbox" id="printer_checkbox" class="form-checkbox" checked>
                         <label for="printer_checkbox">{{.T.select_printer}}</label>
                         <select id="printer" name="printer" class="form-select" required>
@@ -135,6 +135,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                     </div>
 
                     <div class="form-group">
+                        <div class="checkbox-spacer"></div>
                         <label for="iterations">
                             {{.T.iteration_number}}
                             <span class="hint-icon" data-hint="hint_iterations">?</span>
@@ -165,7 +166,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                 </div>
 
                 <div class="form-section">
-                    <div class="form-group form-group-with-button">
+                    <div class="form-group">
                         <h3 class="section-title additional-settings-title">{{.T.additional_settings}}</h3>
                         <button type="button" id="editParametersBtn" class="template-button" data-edit-text="{{.T.edit}}" data-hide-text="{{.T.hide_parameters}}">{{.T.edit}}</button>
                     </div>

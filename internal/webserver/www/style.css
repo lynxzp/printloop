@@ -537,33 +537,13 @@ h1 {
     margin-bottom: 10px;
     margin-top: 10px;
     display: grid;
-    grid-template-columns: auto 4fr 1fr 1fr;
+    grid-template-columns: auto 3fr 1fr 1fr;
     align-items: center;
     gap: 12px;
 }
 
-.form-group.form-group-with-button {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-}
-
-.form-group.form-group-with-button > .form-checkbox {
-    flex: 0 0 auto;
-}
-
-.form-group.form-group-with-button > label {
-    flex: 0 0 auto;
-}
-
-.form-group.form-group-with-button > .form-select {
-    flex: 1 1 200px;
-    min-width: 150px;
-}
-
-.form-group.form-group-with-button > .template-button {
-    flex: 0 1 auto;
+.form-group .section-title.additional-settings-title {
+    grid-column: 1 / 4;
 }
 
 .form-group input[type="number"] {
@@ -578,6 +558,11 @@ h1 {
     accent-color: #667eea;
     cursor: pointer;
     transform: scale(1.1);
+}
+
+.checkbox-spacer {
+    width: 18px;
+    height: 18px;
 }
 
 .form-checkbox:checked {
@@ -826,7 +811,6 @@ input[type="number"]:focus {
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     width: auto;
-    min-width: 126px;
     font-family: inherit;
 }
 
@@ -976,22 +960,6 @@ input[type="number"]:focus {
         gap: 8px;
     }
 
-    .form-group.form-group-with-button {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .form-group.form-group-with-button > .form-select {
-        flex: 1 1 150px;
-        min-width: 120px;
-    }
-
-    .form-group.form-group-with-button > .template-button {
-        flex: 1 1 100%;
-        width: 100%;
-    }
-
     .form-group.template-button-group {
         grid-template-columns: 1fr;
         justify-items: stretch;
@@ -1034,22 +1002,6 @@ input[type="number"]:focus {
     .form-group {
         grid-template-columns: auto 1fr;
         gap: 8px;
-    }
-
-    .form-group.form-group-with-button {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .form-group.form-group-with-button > .form-select {
-        flex: 1 1 100%;
-        width: 100%;
-    }
-
-    .form-group.form-group-with-button > .template-button {
-        flex: 1 1 100%;
-        width: 100%;
     }
 
     .form-group > label {
