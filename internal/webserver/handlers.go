@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -157,6 +158,10 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
 	if (err != nil || req.WaitBedCooldownTemp < 0) && waitBedCooldownTempS != "" {
 		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
+	}
+
+	if req.WaitBedCooldownTemp < 40 && waitBedCooldownTempS != "" {
+		return req, errors.New("bed cooldown temperature must be at least 40°C - Bambulab printers ignore lower values")
 	}
 
 	waitMinS := r.FormValue("wait_min")

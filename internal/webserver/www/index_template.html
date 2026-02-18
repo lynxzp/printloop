@@ -140,7 +140,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             {{.T.iteration_number}}
                             <span class="hint-icon" data-hint="hint_iterations">?</span>
                         </label>
-                        <input type="number" id="iterations" name="iterations" min="2" max="10000" value="2" required>
+                        <input type="number" id="iterations" name="iterations" min="2" max="10000" value="100" required>
                         <span class="input-unit">{{.T.cycles}}</span>
                     </div>
 
@@ -154,7 +154,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
 
                     <div class="form-section" id="templateSection" style="display: none;">
                         <h3 class="section-title">
-                            {{.T.printer_template}}
+                            {{.T.printer_template}}<span class="hint-icon" data-hint="template_variables_reference">?</span>
                         </h3>
                         <div class="template-container">
                             <textarea id="templateContent" class="template-editor" placeholder="Template will appear here..."></textarea>
@@ -178,11 +178,11 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             {{.T.wait_bed_cooldown}}
                             <span class="hint-icon" data-hint="hint_wait_bed_cooldown">?</span>
                         </label>
-                        <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="20" max="80" value="40" required>
+                        <input type="number" id="waitBedCooldownTemp" name="waitBedCooldownTemp" min="40" max="100" value="40" required>
                         <span class="input-unit">°C</span>
                     </div>
                     <div class="form-group">
-                        <input type="checkbox" id="wait_min_checkbox" class="form-checkbox" checked>
+                        <input type="checkbox" id="wait_min_checkbox" class="form-checkbox">
                         <label for="wait_min_checkbox">
                             {{.T.additional_wait_time}}
                             <span class="hint-icon" data-hint="hint_additional_wait_time">?</span>
