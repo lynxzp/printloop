@@ -74,40 +74,10 @@ function initializeApp() {
     }
 
     // Add input validation and formatting
-    setupInputValidation();
     setupSelectValidation();
 
     // Initialize hint system
     initializeHintSystem();
-}
-
-function setupInputValidation() {
-    const numberInputs = document.querySelectorAll('input[type="number"]');
-
-    numberInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            const value = parseInt(this.value);
-            const min = parseInt(this.min);
-            const max = parseInt(this.max);
-
-            if (value < min) this.value = min;
-            if (value > max) this.value = max;
-
-            // Add visual feedback for valid values
-            if (value >= min && value <= max) {
-                this.style.borderColor = '#00b894';
-                this.style.boxShadow = '0 0 0 3px rgba(0, 184, 148, 0.1)';
-            } else {
-                this.style.borderColor = '#e74c3c';
-                this.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.1)';
-            }
-        });
-
-        input.addEventListener('blur', function() {
-            this.style.borderColor = '#e9ecef';
-            this.style.boxShadow = 'none';
-        });
-    });
 }
 
 function setupSelectValidation() {
@@ -199,6 +169,16 @@ async function submitForm(useCustomTemplate) {
 
     formData.append('file', file);
 
+    // Validate and add iterations
+    const iterationsInput = document.getElementById('iterations');
+    const iterationsValue = parseInt(iterationsInput.value);
+    if (isNaN(iterationsValue) || iterationsValue < 2 || iterationsValue > 10000) {
+        showError(window.i18n?.iterationsInvalid || 'Iterations must be between 2 and 10000');
+        resetSubmitButtons();
+        return;
+    }
+    formData.append('iterations', iterationsInput.value);
+
     if (useCustomTemplate) {
         const templateContent = document.getElementById('templateContent');
         if (templateContent && templateContent.value.trim()) {
@@ -213,7 +193,6 @@ async function submitForm(useCustomTemplate) {
     // Add only enabled parameters
     const checkboxConfigs = [
         { checkboxId: 'printer_checkbox', inputId: 'printer', name: 'printer' },
-        { checkboxId: 'iterations_checkbox', inputId: 'iterations', name: 'iterations' },
         { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
         { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
         { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' },

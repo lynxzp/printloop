@@ -150,7 +150,7 @@ func TestUploadHandler(t *testing.T) {
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
 				assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-				assert.Contains(t, w.Body.String(), "template_parsing_error")
+				assert.Contains(t, w.Body.String(), "invalid_parameters")
 			},
 		},
 		{
@@ -161,7 +161,7 @@ func TestUploadHandler(t *testing.T) {
 				var buf bytes.Buffer
 
 				writer := multipart.NewWriter(&buf)
-				_ = writer.WriteField("iterations", "1")
+				_ = writer.WriteField("iterations", "2")
 
 				part, err := writer.CreateFormFile("file", "large.txt")
 				require.NoError(t, err)
@@ -510,14 +510,10 @@ func TestReceiveRequest(t *testing.T) {
 				t.Helper()
 
 				return createUploadRequestWithParams(t, map[string]string{
-					"iterations": "9223372036854775807", // max int64
+					"iterations": "9223372036854775807", // max int64, exceeds 10000 limit
 				})
 			},
-			expectedError: false,
-			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
-				t.Helper()
-				assert.Equal(t, int64(9223372036854775807), req.Iterations)
-			},
+			expectedError: true,
 		},
 		{
 			name: "filename with special characters",

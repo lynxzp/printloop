@@ -135,17 +135,16 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                     </div>
 
                     <div class="form-group">
-                        <input type="checkbox" id="iterations_checkbox" class="form-checkbox" checked>
-                        <label for="iterations_checkbox">
+                        <label for="iterations">
                             {{.T.iteration_number}}
                             <span class="hint-icon" data-hint="hint_iterations">?</span>
                         </label>
-                        <input type="number" id="iterations" name="iterations" min="2" max="1000" value="2" required>
+                        <input type="number" id="iterations" name="iterations" min="2" max="10000" value="2" required>
                         <span class="input-unit">{{.T.cycles}}</span>
                     </div>
 
                     <div class="form-group">
-                        <input type="checkbox" id="test_print_pause_checkbox" class="form-checkbox">
+                        <input type="checkbox" id="test_print_pause_checkbox" class="form-checkbox" checked>
                         <label for="test_print_pause_checkbox">
                             {{.T.test_print_pause}}
                             <span class="hint-icon" data-hint="hint_test_print_pause">?</span>
@@ -234,7 +233,8 @@ window.i18n = {
     noFile: "{{.T.js_error_no_file}}",
     fileNotAccessible: "{{.T.js_error_file_not_accessible}}",
     selectPrinter: "{{.T.js_error_select_printer}}",
-    templateEmpty: "{{.T.js_error_template_empty}}"
+    templateEmpty: "{{.T.js_error_template_empty}}",
+    iterationsInvalid: "{{.T.js_error_iterations_invalid}}"
 };
 </script>
 <script src="./www/script.js"></script>

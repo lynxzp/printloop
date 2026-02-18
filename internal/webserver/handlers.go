@@ -148,8 +148,8 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 
 	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
 
-	if err != nil || req.Iterations <= 0 {
-		return req, fmt.Errorf("invalid iterations value %v: %w", iterationsS, err)
+	if err != nil || req.Iterations < 2 || req.Iterations > 10000 {
+		return req, fmt.Errorf("invalid iterations value %v: must be between 2 and 10000", iterationsS)
 	}
 
 	waitBedCooldownTempS := r.FormValue("waitBedCooldownTemp")

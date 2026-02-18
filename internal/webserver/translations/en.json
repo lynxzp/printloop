@@ -102,5 +102,6 @@
   "js_error_no_file": "Please select a file first",
   "js_error_file_not_accessible": "The selected file is no longer accessible. Please select the file again.",
   "js_error_select_printer": "Please select a printer first",
-  "js_error_template_empty": "Template content is empty. Please edit the template or use the standard processing button."
+  "js_error_template_empty": "Template content is empty. Please edit the template or use the standard processing button.",
+  "js_error_iterations_invalid": "Iterations must be between 2 and 10000"
 }
