@@ -4,58 +4,23 @@
     box-sizing: border-box;
 }
 
+html {
+    width: 100%;
+}
+
 body {
+    width: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.4;
     color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #fafafa;
     min-height: 100vh;
     overflow-x: hidden;
 }
 
-/* Language Switcher */
-.language-switcher {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 2000;
-    display: flex;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 8px 12px;
-    border-radius: 25px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
-    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lang-link {
-    color: #333;
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-weight: 500;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.lang-link:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-}
-
-.lang-link.active {
-    background: #667eea;
-    color: white;
-}
-
-/* Language switcher adjustments when error panel is open */
-body.error-panel-open .language-switcher {
-    right: 420px;
-}
-
 /* Main Layout Container */
 .app-container {
+    width: 100%;
     display: flex;
     min-height: 100vh;
     position: relative;
@@ -73,7 +38,6 @@ body.error-panel-open .language-switcher {
     transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
     overflow-y: auto;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .docs-panel.open {
@@ -197,7 +161,6 @@ body.error-panel-open .language-switcher {
     transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
     overflow-y: auto;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .error-panel.open {
@@ -364,7 +327,7 @@ body.error-panel-open .language-switcher {
 /* Main Content Area */
 .main-content {
     flex: 1;
-    padding: 15px;
+    padding: 0;
     transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -376,15 +339,10 @@ body.error-panel-open .language-switcher {
     margin-right: 400px;
 }
 
-/* Existing styles for the main form */
 .container {
     max-width: 900px;
     margin: 0 auto;
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
+    padding: 0 25px 25px 25px;
 }
 
 h1 {
@@ -537,7 +495,7 @@ h1 {
     margin-bottom: 10px;
     margin-top: 10px;
     display: grid;
-    grid-template-columns: auto 3fr 1fr 1fr;
+    grid-template-columns: auto 2fr 1fr 1fr;
     align-items: center;
     gap: 12px;
 }
@@ -575,7 +533,7 @@ label {
     font-size: 0.95rem;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     cursor: pointer;
     transition: color 0.3s ease;
@@ -915,121 +873,6 @@ input[type="number"]:focus {
     .main-content.error-open {
         margin-right: 350px;
     }
-
-    /* Language switcher adjustment for tablet */
-    body.error-panel-open .language-switcher {
-        right: 370px;
-    }
-}
-
-@media (max-width: 768px) {
-    .docs-panel {
-        width: 100%;
-        left: -100%;
-    }
-
-    .main-content.docs-open {
-        margin-left: 0;
-    }
-
-    .error-panel {
-        width: 100%;
-        right: -100%;
-    }
-
-    .main-content.error-open {
-        margin-right: 0;
-    }
-
-    /* Language switcher stays in original position on mobile since error panel is full width */
-    body.error-panel-open .language-switcher {
-        right: 20px;
-    }
-
-    .container {
-        padding: 20px;
-        margin: 8px;
-    }
-
-    h1 {
-        font-size: 2rem;
-    }
-
-    .form-group {
-        grid-template-columns: auto 1fr 80px 55px;
-        gap: 8px;
-    }
-
-    .form-group.template-button-group {
-        grid-template-columns: 1fr;
-        justify-items: stretch;
-    }
-
-    .form-group.template-button-group .template-button {
-        width: 100%;
-    }
-
-    input[type="number"], .form-select {
-        width: 80px;
-        padding: 8px 10px;
-    }
-
-    .input-unit {
-        min-width: 40px;
-        padding: 8px 4px;
-        font-size: 0.75rem;
-    }
-
-    .upload-area {
-        padding: 25px 15px;
-    }
-
-    .upload-icon {
-        font-size: 2.5rem;
-    }
-
-    #submitBtn, .custom-submit-btn {
-        width: 100%;
-        padding: 15px;
-    }
-
-    .form-section {
-        padding: 15px;
-    }
-}
-
-@media (max-width: 480px) {
-    .form-group {
-        grid-template-columns: auto 1fr;
-        gap: 8px;
-    }
-
-    .form-group > label {
-        grid-column: 1 / -1;
-    }
-
-    .form-group > input[type="number"],
-    .form-group > .form-select {
-        width: 100%;
-        max-width: none;
-    }
-
-    .form-group > .input-unit {
-        justify-self: start;
-    }
-
-    .form-group.template-button-group {
-        grid-template-columns: 1fr;
-    }
-
-    .upload-area p {
-        font-size: 1rem;
-    }
-
-    .browse-button {
-        padding: 8px 20px;
-        font-size: 0.9rem;
-    }
 }
 
 /* Animation Classes */
@@ -1201,18 +1044,18 @@ input[type="number"]:focus {
     .hint-popup {
         padding: 10px;
     }
-    
+
     .hint-popup-content {
         max-width: 100%;
         margin: 0;
         border-radius: 10px;
         max-height: 90vh;
     }
-    
+
     .hint-popup-header {
         padding: 15px;
     }
-    
+
     .hint-popup-body {
         padding: 10px 20px 20px 20px;
         font-size: 0.9rem;

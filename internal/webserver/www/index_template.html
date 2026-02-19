@@ -25,12 +25,6 @@
 </head>
 <body>
 <div class="app-container">
-    <!-- Language Switcher -->
-    <div class="language-switcher">
-        <a href="?lang=en" class="lang-link {{if eq .Lang "en"}}active{{end}}">EN</a>
-        <a href="?lang=uk" class="lang-link {{if eq .Lang "uk"}}active{{end}}">УК</a>
-    </div>
-
     <!-- Documentation Panel -->
     <div class="docs-panel" id="docsPanel">
         <div class="docs-header">
@@ -102,7 +96,6 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <div class="container">
-            <h1>{{.T.title}}</h1>
             <div class="info" style="color:red">
                 <b>{{.T.important_notice}}</b>
                 <ul style="margin:0.3em 0">
