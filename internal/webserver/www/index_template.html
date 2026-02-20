@@ -97,10 +97,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
     <div class="main-content" id="mainContent">
         <div class="container">
             <div class="info" style="color:red">
-                <b>{{.T.important_notice}}</b>
-                <ul style="margin:0.3em 0">
-                    <li>{{.T.first_layer_warning}}</li>
-                </ul>
+                <b>{{.T.important_notice}}</b> {{.T.first_layer_warning}}
             </div>
 
             <form id="uploadForm" action="./upload" method="post" enctype="multipart/form-data">

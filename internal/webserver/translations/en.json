@@ -2,7 +2,7 @@
   "title": "Continuous loop 3D printing",
   "meta_description": "Automate continuous 3D printing with loop G-code generation. Upload your file, configure iterations, and get ready-to-print code.",
   "important_notice": "PLEASE NOTE:",
-  "first_layer_warning": "The first layer area should be small enough for easy removal.",
+  "first_layer_warning": "The first layer area should be small enough for easy pushing item from the table.",
   "drag_drop_text": "Drag and drop G-code files here",
   "or_click_browse": "or click to browse files",
   "choose_file": "Choose File",
