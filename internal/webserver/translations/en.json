@@ -34,6 +34,8 @@
   "docs_var_config_params": "Printer config parameters",
   "docs_var_first_coords": "First print coordinates",
   "docs_var_last_coords": "Last print coordinates",
+  "docs_var_avg_coords": "Average print coordinates (center of all print moves)",
+  "docs_var_minmax_coords": "Min/Max print coordinates (bounding box of all print moves)",
   "docs_functions_patterns": "Functions & Patterns",
   "docs_math": "Math: add, sub, mul, max",
   "docs_conditionals": "Conditionals",

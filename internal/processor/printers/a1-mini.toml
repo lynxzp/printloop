@@ -32,11 +32,14 @@ Code = """
 G1 E-{{.Config.RetractDistance}}
 G1 Y{{.Config.BackY}} ; Move back
 {{if .Request.TestPrintWithPause}}M400 U1 ; Pause for inspection - resume from printer screen {{end}}
+
+; Wait for bed cooldown if needed
 {{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Request.WaitBedCooldownTemp}} ; Set bed target temperature
 M190 R{{.Request.WaitBedCooldownTemp}} ; Wait for bed to reach temperature {{end}}
 {{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout {{end}}
-G1 X{{printf "%.2f" .Positions.LastPrintX}} ; Move to last print X position
-G1 Z{{printf "%.2f" (max (sub .Positions.LastPrintZ .Config.MoveDownBeforePush) .Config.MinZ)}} ; Move to Z position
+
+G1 X{{printf "%.2f" .Positions.AveragePrintX}} ; Move to center of print X position
+G1 Z3 ; Move down
 G1 Y{{.Config.PushY}}; Push printed item
 G1 X{{.Positions.FirstPrintX}} Y{{.Positions.FirstPrintY}} Z{{.Positions.FirstPrintZ}}
 G1 E{{.Config.RetractDistance}}

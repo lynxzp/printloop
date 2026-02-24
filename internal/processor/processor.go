@@ -92,6 +92,12 @@ type MarkerPositions struct {
 	LastPrintX               float64 // X coordinate from last print command (G1 with positive E)
 	LastPrintY               float64 // Y coordinate from last print command (G1 with positive E)
 	LastPrintZ               float64 // Z coordinate that was active during last print command
+	AveragePrintX            float64 // Average X coordinate across all print commands (G1 with positive E)
+	AveragePrintY            float64 // Average Y coordinate across all print commands (G1 with positive E)
+	MinPrintX                float64 // Min X coordinate across all print commands (G1 with positive E)
+	MinPrintY                float64 // Min Y coordinate across all print commands (G1 with positive E)
+	MaxPrintX                float64 // Max X coordinate across all print commands (G1 with positive E)
+	MaxPrintY                float64 // Max Y coordinate across all print commands (G1 with positive E)
 }
 
 // GCodeCoordinates holds parsed G-code coordinates
@@ -360,7 +366,7 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 	}
 
 	// Extract G-code coordinates
-	firstPrintX, firstPrintY, firstPrintZ, lastPrintX, lastPrintY, lastPrintZ, err := p.extractGCodeCoordinates(filePath, initLast)
+	firstPrintX, firstPrintY, firstPrintZ, lastPrintX, lastPrintY, lastPrintZ, avgPrintX, avgPrintY, minPrintX, minPrintY, maxPrintX, maxPrintY, err := p.extractGCodeCoordinates(filePath, initLast)
 	if err != nil {
 		return nil, err
 	}
@@ -376,16 +382,22 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 		LastPrintX:               lastPrintX,
 		LastPrintY:               lastPrintY,
 		LastPrintZ:               lastPrintZ,
+		AveragePrintX:            avgPrintX,
+		AveragePrintY:            avgPrintY,
+		MinPrintX:                minPrintX,
+		MinPrintY:                minPrintY,
+		MaxPrintX:                maxPrintX,
+		MaxPrintY:                maxPrintY,
 	}
 
 	return positions, nil
 }
 
-// extractGCodeCoordinates scans file and extracts first and last print coordinates
-func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSectionLastLine int64) (float64, float64, float64, float64, float64, float64, error) { //nolint:gocognit
+// extractGCodeCoordinates scans file and extracts first, last, average, min, and max print coordinates
+func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSectionLastLine int64) (float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, error) { //nolint:gocognit,gocyclo
 	file, err := os.Open(filePath)
 	if err != nil {
-		return 0, 0, 0, 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, err
 	}
 	defer file.Close()
 
@@ -394,6 +406,9 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 		lastPrintX, lastPrintY, lastPrintZ    *float64
 		currentZ                              *float64
 		firstPrintFound                       bool
+		sumX, sumY                            float64
+		countX, countY                        int
+		minX, minY, maxX, maxY                *float64
 	)
 
 	scanner := bufio.NewScanner(file)
@@ -444,6 +459,32 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 				if currentZ != nil {
 					lastPrintZ = currentZ
 				}
+
+				if coords.X != nil {
+					sumX += *coords.X
+					countX++
+
+					if minX == nil || *coords.X < *minX {
+						minX = coords.X
+					}
+
+					if maxX == nil || *coords.X > *maxX {
+						maxX = coords.X
+					}
+				}
+
+				if coords.Y != nil {
+					sumY += *coords.Y
+					countY++
+
+					if minY == nil || *coords.Y < *minY {
+						minY = coords.Y
+					}
+
+					if maxY == nil || *coords.Y > *maxY {
+						maxY = coords.Y
+					}
+				}
 			}
 		}
 
@@ -452,7 +493,7 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 
 	err = scanner.Err()
 	if err != nil {
-		return 0, 0, 0, 0, 0, 0, err
+		return 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, err
 	}
 
 	// Return coordinates with defaults if not found
@@ -485,11 +526,38 @@ func (p *StreamingProcessor) extractGCodeCoordinates(filePath string, endInitSec
 	if !strings.Contains(p.config.Printer, "unit-tests") {
 		// unit tests don't contain entire G-code, so we don't check for first print found
 		if !firstPrintFound {
-			return fx, fy, fz, lx, ly, lz, fmt.Errorf("no print commands found after end of init section at line %d", endInitSectionLastLine)
+			return fx, fy, fz, lx, ly, lz, 0, 0, 0, 0, 0, 0, fmt.Errorf("no print commands found after end of init section at line %d", endInitSectionLastLine)
 		}
 	}
 
-	return fx, fy, fz, lx, ly, lz, nil
+	var avgX, avgY float64
+	if countX > 0 {
+		avgX = sumX / float64(countX)
+	}
+
+	if countY > 0 {
+		avgY = sumY / float64(countY)
+	}
+
+	var mnX, mnY, mxX, mxY float64
+
+	if minX != nil {
+		mnX = *minX
+	}
+
+	if minY != nil {
+		mnY = *minY
+	}
+
+	if maxX != nil {
+		mxX = *maxX
+	}
+
+	if maxY != nil {
+		mxY = *maxY
+	}
+
+	return fx, fy, fz, lx, ly, lz, avgX, avgY, mnX, mnY, mxX, mxY, nil
 }
 
 // parseGCodeLine parses a G-code line and extracts coordinates

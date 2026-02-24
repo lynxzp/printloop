@@ -985,3 +985,251 @@ M625`,
 		})
 	}
 }
+
+func TestStreamingProcessor_findMarkerPositions_MinMaxPrintCoordinates(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		gcodeContent string
+		expectedMinX float64
+		expectedMinY float64
+		expectedMaxX float64
+		expectedMaxY float64
+	}{
+		{
+			name: "single print command - min equals max",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+M625`,
+			expectedMinX: 10.0,
+			expectedMinY: 20.0,
+			expectedMaxX: 10.0,
+			expectedMaxY: 20.0,
+		},
+		{
+			name: "multiple commands - correct min and max",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 X30.0 Y5.0 E0.2
+G1 X5.0 Y40.0 E0.3
+M625`,
+			expectedMinX: 5.0,
+			expectedMinY: 5.0,
+			expectedMaxX: 30.0,
+			expectedMaxY: 40.0,
+		},
+		{
+			name: "partial coordinates - X only affects X min/max",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 X50.0 E0.2
+M625`,
+			expectedMinX: 10.0,
+			expectedMinY: 20.0,
+			expectedMaxX: 50.0,
+			expectedMaxY: 20.0,
+		},
+		{
+			name: "partial coordinates - Y only affects Y min/max",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 Y1.0 E0.2
+M625`,
+			expectedMinX: 10.0,
+			expectedMinY: 1.0,
+			expectedMaxX: 10.0,
+			expectedMaxY: 20.0,
+		},
+		{
+			name: "no print commands defaults to zero",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X24.811 Y159.285
+G1 X10.0 Y20.0 E0
+G1 X5.0 Y10.0 E-0.1
+M625`,
+			expectedMinX: 0.0,
+			expectedMinY: 0.0,
+			expectedMaxX: 0.0,
+			expectedMaxY: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create temporary file with test content
+			tmpFile, err := os.CreateTemp(t.TempDir(), "gcode_test_*.gcode")
+			if err != nil {
+				t.Fatalf("Failed to create temp file: %v", err)
+			}
+			defer os.Remove(tmpFile.Name())
+			defer tmpFile.Close()
+
+			_, err = tmpFile.WriteString(tt.gcodeContent)
+			if err != nil {
+				t.Fatalf("Failed to write test content: %v", err)
+			}
+
+			tmpFile.Close()
+
+			// Create processor with test configuration
+			config := ProcessingRequest{
+				Iterations: 1,
+				Printer:    "unit-tests-gcode2",
+			}
+
+			processor, err := NewStreamingProcessor(config)
+			if err != nil {
+				t.Fatalf("Failed to create processor: %v", err)
+			}
+
+			// Test the function
+			positions, err := processor.findMarkerPositions(tmpFile.Name())
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Check min/max coordinates
+			if positions.MinPrintX != tt.expectedMinX {
+				t.Errorf("MinPrintX: expected %f, got %f", tt.expectedMinX, positions.MinPrintX)
+			}
+
+			if positions.MinPrintY != tt.expectedMinY {
+				t.Errorf("MinPrintY: expected %f, got %f", tt.expectedMinY, positions.MinPrintY)
+			}
+
+			if positions.MaxPrintX != tt.expectedMaxX {
+				t.Errorf("MaxPrintX: expected %f, got %f", tt.expectedMaxX, positions.MaxPrintX)
+			}
+
+			if positions.MaxPrintY != tt.expectedMaxY {
+				t.Errorf("MaxPrintY: expected %f, got %f", tt.expectedMaxY, positions.MaxPrintY)
+			}
+		})
+	}
+}
+
+func TestStreamingProcessor_findMarkerPositions_AveragePrintCoordinates(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		gcodeContent string
+		expectedAvgX float64
+		expectedAvgY float64
+	}{
+		{
+			name: "single print command",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+M625`,
+			expectedAvgX: 10.0,
+			expectedAvgY: 20.0,
+		},
+		{
+			name: "two print commands",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 X30.0 Y40.0 E0.2
+M625`,
+			expectedAvgX: 20.0,
+			expectedAvgY: 30.0,
+		},
+		{
+			name: "three print commands",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y10.0 E0.1
+G1 X20.0 Y20.0 E0.2
+G1 X30.0 Y30.0 E0.3
+M625`,
+			expectedAvgX: 20.0,
+			expectedAvgY: 20.0,
+		},
+		{
+			name: "partial coordinates - X only second command",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 X30.0 E0.2
+M625`,
+			expectedAvgX: 20.0,
+			expectedAvgY: 20.0,
+		},
+		{
+			name: "partial coordinates - Y only second command",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X10.0 Y20.0 E0.1
+G1 Y40.0 E0.2
+M625`,
+			expectedAvgX: 10.0,
+			expectedAvgY: 30.0,
+		},
+		{
+			name: "no print commands defaults to zero",
+			gcodeContent: `M211 X0 Y0 Z0 ;turn off soft endstop
+M1007 S1
+G1 X24.811 Y159.285
+G1 X10.0 Y20.0 E0
+G1 X5.0 Y10.0 E-0.1
+M625`,
+			expectedAvgX: 0.0,
+			expectedAvgY: 0.0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create temporary file with test content
+			tmpFile, err := os.CreateTemp(t.TempDir(), "gcode_test_*.gcode")
+			if err != nil {
+				t.Fatalf("Failed to create temp file: %v", err)
+			}
+			defer os.Remove(tmpFile.Name())
+			defer tmpFile.Close()
+
+			_, err = tmpFile.WriteString(tt.gcodeContent)
+			if err != nil {
+				t.Fatalf("Failed to write test content: %v", err)
+			}
+
+			tmpFile.Close()
+
+			// Create processor with test configuration
+			config := ProcessingRequest{
+				Iterations: 1,
+				Printer:    "unit-tests-gcode2",
+			}
+
+			processor, err := NewStreamingProcessor(config)
+			if err != nil {
+				t.Fatalf("Failed to create processor: %v", err)
+			}
+
+			// Test the function
+			positions, err := processor.findMarkerPositions(tmpFile.Name())
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Check average coordinates
+			if positions.AveragePrintX != tt.expectedAvgX {
+				t.Errorf("AveragePrintX: expected %f, got %f", tt.expectedAvgX, positions.AveragePrintX)
+			}
+
+			if positions.AveragePrintY != tt.expectedAvgY {
+				t.Errorf("AveragePrintY: expected %f, got %f", tt.expectedAvgY, positions.AveragePrintY)
+			}
+		})
+	}
+}
