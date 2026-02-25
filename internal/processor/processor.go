@@ -30,6 +30,7 @@ type PrinterDefinition struct {
 	Template   struct {
 		Code string
 	}
+	Assertions map[string][]any
 }
 
 // PositionMarkers struct for backward compatibility
@@ -298,6 +299,12 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 	}
 
 	p.positions = *pos
+
+	// Validate assertions against found positions
+	err = validateAssertions(p.positions, p.printerDef.Assertions)
+	if err != nil {
+		return err
+	}
 
 	// Open output file
 	outputFile, err := os.Create(outputPath)
@@ -769,6 +776,85 @@ func (p *StreamingProcessor) validateInput() error {
 	}
 
 	return nil
+}
+
+// getPositionValue returns the float64 value of a MarkerPositions field by name
+func getPositionValue(positions MarkerPositions, fieldName string) (float64, error) {
+	switch fieldName {
+	case "FirstPrintX":
+		return positions.FirstPrintX, nil
+	case "FirstPrintY":
+		return positions.FirstPrintY, nil
+	case "FirstPrintZ":
+		return positions.FirstPrintZ, nil
+	case "LastPrintX":
+		return positions.LastPrintX, nil
+	case "LastPrintY":
+		return positions.LastPrintY, nil
+	case "LastPrintZ":
+		return positions.LastPrintZ, nil
+	case "AveragePrintX":
+		return positions.AveragePrintX, nil
+	case "AveragePrintY":
+		return positions.AveragePrintY, nil
+	case "MinPrintX":
+		return positions.MinPrintX, nil
+	case "MinPrintY":
+		return positions.MinPrintY, nil
+	case "MaxPrintX":
+		return positions.MaxPrintX, nil
+	case "MaxPrintY":
+		return positions.MaxPrintY, nil
+	default:
+		return 0, fmt.Errorf("unknown assertion field: %s", fieldName)
+	}
+}
+
+// validateAssertions checks that position values fall within declared ranges
+func validateAssertions(positions MarkerPositions, assertions map[string][]any) error {
+	for fieldName, bounds := range assertions {
+		if len(bounds) != 2 {
+			return fmt.Errorf("assertion %s must have exactly 2 values [min, max], got %d", fieldName, len(bounds))
+		}
+
+		minVal, ok := toFloat64(bounds[0])
+		if !ok {
+			return fmt.Errorf("assertion %s: min value is not a number", fieldName)
+		}
+
+		maxVal, ok := toFloat64(bounds[1])
+		if !ok {
+			return fmt.Errorf("assertion %s: max value is not a number", fieldName)
+		}
+
+		actual, err := getPositionValue(positions, fieldName)
+		if err != nil {
+			return err
+		}
+
+		if actual < minVal || actual > maxVal {
+			return fmt.Errorf("assertion failed: %s value %.2f is outside allowed range [%.2f, %.2f]", fieldName, actual, minVal, maxVal)
+		}
+	}
+
+	return nil
+}
+
+func toFloat64(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case float32:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	default:
+		return 0, false
+	}
 }
 
 // ProcessFile processes a file using the true streaming processor with printer configuration

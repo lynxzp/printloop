@@ -1115,6 +1115,205 @@ M625`,
 	}
 }
 
+func TestValidateAssertions(t *testing.T) {
+	t.Parallel()
+
+	positions := MarkerPositions{
+		FirstPrintX:   10.0,
+		FirstPrintY:   20.0,
+		FirstPrintZ:   0.3,
+		LastPrintX:    150.0,
+		LastPrintY:    160.0,
+		LastPrintZ:    5.0,
+		AveragePrintX: 80.0,
+		AveragePrintY: 90.0,
+		MinPrintX:     10.0,
+		MinPrintY:     20.0,
+		MaxPrintX:     150.0,
+		MaxPrintY:     160.0,
+	}
+
+	tests := []struct {
+		name        string
+		assertions  map[string][]any
+		expectError bool
+		errorSubstr string
+	}{
+		{
+			name:        "no assertions - passes",
+			assertions:  nil,
+			expectError: false,
+		},
+		{
+			name: "all within range - passes",
+			assertions: map[string][]any{
+				"AveragePrintX": {0.0, 180.0},
+				"AveragePrintY": {0.0, 180.0},
+			},
+			expectError: false,
+		},
+		{
+			name: "value below minimum - fails",
+			assertions: map[string][]any{
+				"MinPrintX": {50.0, 180.0},
+			},
+			expectError: true,
+			errorSubstr: "MinPrintX",
+		},
+		{
+			name: "value above maximum - fails",
+			assertions: map[string][]any{
+				"MaxPrintY": {0.0, 100.0},
+			},
+			expectError: true,
+			errorSubstr: "MaxPrintY",
+		},
+		{
+			name: "value exactly at boundary - passes",
+			assertions: map[string][]any{
+				"AveragePrintX": {80.0, 80.0},
+			},
+			expectError: false,
+		},
+		{
+			name: "unknown field name - fails",
+			assertions: map[string][]any{
+				"NonExistentField": {0.0, 100.0},
+			},
+			expectError: true,
+			errorSubstr: "unknown assertion field",
+		},
+		{
+			name: "wrong number of values - fails",
+			assertions: map[string][]any{
+				"AveragePrintX": {0.0},
+			},
+			expectError: true,
+			errorSubstr: "must have exactly 2 values",
+		},
+		{
+			name: "non-numeric assertion value - fails",
+			assertions: map[string][]any{
+				"AveragePrintX": {"not_a_number", 100.0},
+			},
+			expectError: true,
+			errorSubstr: "min value is not a number",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAssertions(positions, tt.assertions)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				} else if tt.errorSubstr != "" && !strings.Contains(err.Error(), tt.errorSubstr) {
+					t.Errorf("Expected error containing %q, got %q", tt.errorSubstr, err.Error())
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestStreamingProcessor_ProcessFile_Assertions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		input       []string
+		assertions  map[string][]any
+		expectError bool
+		errorSubstr string
+	}{
+		{
+			name: "assertion passes - file processed",
+			input: []string{
+				"M211 X0 Y0 Z0 ;turn off soft endstop",
+				"M1007 S1",
+				"G1 X50.0 Y50.0 E0.1",
+				"M625",
+			},
+			assertions: map[string][]any{
+				"AveragePrintX": {0.0, 180.0},
+			},
+			expectError: false,
+		},
+		{
+			name: "assertion fails - processing aborted",
+			input: []string{
+				"M211 X0 Y0 Z0 ;turn off soft endstop",
+				"M1007 S1",
+				"G1 X190.0 Y50.0 E0.1",
+				"M625",
+			},
+			assertions: map[string][]any{
+				"MaxPrintX": {0.0, 180.0},
+			},
+			expectError: true,
+			errorSubstr: "assertion failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			inputPath := filepath.Join(tempDir, "input.gcode")
+			outputPath := filepath.Join(tempDir, "output.gcode")
+
+			err := writeLinesToFile(inputPath, tt.input)
+			if err != nil {
+				t.Fatalf("Failed to write input file: %v", err)
+			}
+
+			config := ProcessingRequest{
+				Iterations: 1,
+				Printer:    "unit-tests-gcode2",
+			}
+
+			processor, err := NewStreamingProcessor(config)
+			if err != nil {
+				t.Fatalf("Failed to create processor: %v", err)
+			}
+
+			// Inject assertions into printer definition
+			processor.printerDef.Assertions = tt.assertions
+
+			err = processor.ProcessFile(inputPath, outputPath)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				} else if !strings.Contains(err.Error(), tt.errorSubstr) {
+					t.Errorf("Expected error containing %q, got %q", tt.errorSubstr, err.Error())
+				}
+
+				// Verify no output file was created
+				_, statErr := os.Stat(outputPath)
+				if statErr == nil {
+					t.Errorf("Output file should not exist when assertion fails")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestStreamingProcessor_findMarkerPositions_AveragePrintCoordinates(t *testing.T) {
 	t.Parallel()
 

@@ -25,6 +25,18 @@ MinZ = 0.5
 BackY = 179.99
 PushY = 0
 
+[Assertions]
+# Max Y limit: leave clearance between print and back edge
+# so the printhead can move down and push the part off
+MaxPrintY = [2.0, 160.0]
+# Just a sanity check to make sure gcode is not doing anything crazy
+MinPrintY = [0, 158.0]
+AveragePrintY = [1.0, 159.0]
+
+MinPrintX = [0, 178.0]
+MaxPrintX = [2.0, 180.0]
+AveragePrintX = [1.0, 179.0]
+
 [Template]
 Code = """
 ======================================================================
