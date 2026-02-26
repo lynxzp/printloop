@@ -184,9 +184,14 @@ async function submitForm(useCustomTemplate) {
         }
     }
 
+    // Always add printer parameter (required)
+    const printerInput = document.getElementById('printer');
+    if (printerInput && printerInput.value) {
+        formData.append('printer', printerInput.value);
+    }
+
     // Add only enabled parameters
     const checkboxConfigs = [
-        { checkboxId: 'printer_checkbox', inputId: 'printer', name: 'printer' },
         { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
         { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
         { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' },
