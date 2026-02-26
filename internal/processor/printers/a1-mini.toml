@@ -3,7 +3,7 @@ Name = "A1 mini"
 [Markers]
 EndInitSection = ["M624"]
 EndPrintSection = ["M625"]
-# Markers requre to split gcode into sections:
+# Markers require to split gcode into sections:
 # - initialization section
 # - print section
 # - end section

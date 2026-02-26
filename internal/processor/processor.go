@@ -867,6 +867,7 @@ func ProcessFile(inputPath, outputPath string, config ProcessingRequest) error {
 	return processor.ProcessFile(inputPath, outputPath)
 }
 
-func LoadPrinterDefinitionPublic(printerName string) (*PrinterDefinition, error) {
-	return loadPrinterDefinition(printerName)
+func LoadPrinterDefinitionRaw(printerName string) ([]byte, error) {
+	filename := "printers/" + printerName + ".toml"
+	return printerConfigs.ReadFile(filename)
 }

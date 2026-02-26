@@ -230,103 +230,14 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 	printerName = strings.ReplaceAll(printerName, " ", "-")
 	printerName = strings.ToLower(printerName)
 
-	// Load printer definition
-	printerDef, err := processor.LoadPrinterDefinitionPublic(printerName)
+	data, err := processor.LoadPrinterDefinitionRaw(printerName)
 	if err != nil {
 		http.Error(w, "Printer not found: "+err.Error(), http.StatusNotFound)
 		return
 	}
 
-	// Convert the complete printer definition to TOML format with custom handling for multiline strings
-	var buf strings.Builder
-
-	// Write basic fields
-	fmt.Fprintf(&buf, "Name = %q\n\n", printerDef.Name)
-
-	// Write Markers section
-	buf.WriteString("[Markers]\n")
-	fmt.Fprintf(&buf, "EndInitSection = %v\n", formatStringSlice(printerDef.Markers.EndInitSection))
-	fmt.Fprintf(&buf, "EndPrintSection = %v\n", formatStringSlice(printerDef.Markers.EndPrintSection))
-	buf.WriteString("\n")
-
-	// Write SearchStrategy section
-	buf.WriteString("[SearchStrategy]\n")
-	fmt.Fprintf(&buf, "EndInitSectionStrategy = %q\n", printerDef.SearchStrategy.EndInitSectionStrategy)
-	fmt.Fprintf(&buf, "EndPrintSectionStrategy = %q\n", printerDef.SearchStrategy.EndPrintSectionStrategy)
-	buf.WriteString("\n")
-
-	// Write Parameters section
-	if len(printerDef.Parameters) > 0 {
-		buf.WriteString("[Parameters]\n")
-
-		for key, value := range printerDef.Parameters {
-			fmt.Fprintf(&buf, "%s = %v\n", key, formatValue(value))
-		}
-
-		buf.WriteString("\n")
-	}
-
-	// Write Assertions section
-	if len(printerDef.Assertions) > 0 {
-		buf.WriteString("[Assertions]\n")
-
-		for key, value := range printerDef.Assertions {
-			fmt.Fprintf(&buf, "%s = %s\n", key, formatAssertionRange(value))
-		}
-
-		buf.WriteString("\n")
-	}
-
-	// Write Template section with multiline string
-	buf.WriteString("[Template]\n")
-	buf.WriteString("Code = \"\"\"\n")
-	buf.WriteString(printerDef.Template.Code)
-
-	if !strings.HasSuffix(printerDef.Template.Code, "\n") {
-		buf.WriteString("\n")
-	}
-
-	buf.WriteString("\"\"\"\n")
-
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	_, _ = w.Write([]byte(buf.String()))
-}
-
-func formatStringSlice(slice []string) string {
-	if len(slice) == 0 {
-		return "[]"
-	}
-
-	if len(slice) == 1 {
-		return fmt.Sprintf("[%q]", slice[0])
-	}
-
-	parts := make([]string, 0, len(slice))
-	for _, s := range slice {
-		parts = append(parts, fmt.Sprintf("%q", s))
-	}
-
-	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
-}
-
-func formatAssertionRange(values []any) string {
-	parts := make([]string, 0, len(values))
-	for _, v := range values {
-		parts = append(parts, fmt.Sprintf("%v", v))
-	}
-
-	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
-}
-
-func formatValue(v any) string {
-	switch val := v.(type) {
-	case string:
-		return fmt.Sprintf("%q", val)
-	case int, int64, float64:
-		return fmt.Sprintf("%v", val)
-	default:
-		return fmt.Sprintf("%v", val)
-	}
+	_, _ = w.Write(data)
 }
 
 func StaticFileServer() http.Handler {
