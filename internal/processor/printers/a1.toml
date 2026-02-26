@@ -32,7 +32,6 @@ MaxPrintY = [2.0, 245.0]
 # Just a sanity check to make sure gcode is not doing anything crazy
 MinPrintY = [0, 243.0]
 AveragePrintY = [1.0, 244.0]
-
 MinPrintX = [0, 254.0]
 MaxPrintX = [2.0, 256.0]
 AveragePrintX = [1.0, 255.0]

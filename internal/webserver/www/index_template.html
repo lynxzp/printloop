@@ -124,7 +124,6 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                             <option value="A1">A1</option>
                             <option value="A1 mini">A1 mini</option>
                         </select>
-                        <button type="button" id="showTemplateBtn" class="template-button">{{.T.show_template}}</button>
                     </div>
 
                     <div class="form-group">
@@ -145,17 +144,6 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                         </label>
                     </div>
 
-                    <div class="form-section" id="templateSection" style="display: none;">
-                        <h3 class="section-title">
-                            {{.T.printer_template}}<span class="hint-icon" data-hint="template_variables_reference">?</span>
-                        </h3>
-                        <div class="template-container">
-                            <textarea id="templateContent" class="template-editor" placeholder="Template will appear here..."></textarea>
-                            <div class="template-actions">
-                                <button type="button" id="hideTemplateBtn" class="template-action-btn secondary">{{.T.hide}}</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="form-section">
@@ -163,7 +151,7 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                         <h3 class="section-title additional-settings-title">{{.T.additional_settings}}</h3>
                         <button type="button" id="editParametersBtn" class="template-button" data-edit-text="{{.T.edit}}" data-hide-text="{{.T.hide_parameters}}">{{.T.edit}}</button>
                     </div>
-                    
+
                     <div class="parameters-container" id="parametersContainer" style="display: none;">
                     <div class="form-group">
                         <input type="checkbox" id="waitBedCooldownTempCheckbox" class="form-checkbox">
@@ -191,6 +179,20 @@ G4 S{{`{{mul .Request.WaitMin 60}}`}}</div>
                         </label>
                         <input type="number" id="extra_extrude" name="extra_extrude" min="0" max="5" value="0.2" step="any" required>
                         <span class="input-unit">{{.T.mm}}</span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-spacer"></div>
+                        <button type="button" id="showTemplateBtn" class="template-button" data-edit-text="{{.T.edit_automation_script}}" data-hide-text="{{.T.hide_automation_script}}">{{.T.edit_automation_script}}</button>
+                    </div>
+
+                    <div class="form-section" id="templateSection" style="display: none;">
+                        <h3 class="section-title">
+                            {{.T.printer_template}}<span class="hint-icon" data-hint="template_variables_reference">?</span>
+                        </h3>
+                        <div class="template-container">
+                            <textarea id="templateContent" class="template-editor" placeholder="Template will appear here..."></textarea>
+                        </div>
                     </div>
                     </div>
                 </div>

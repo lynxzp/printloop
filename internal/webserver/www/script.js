@@ -11,9 +11,7 @@ function initializeApp() {
     const loading = document.getElementById('loading');
     const btnText = document.querySelector('.btn-text');
     const showTemplateBtn = document.getElementById('showTemplateBtn');
-    const hideTemplateBtn = document.getElementById('hideTemplateBtn');
     const editParametersBtn = document.getElementById('editParametersBtn');
-
     // Documentation panel elements
     const docsPanel = document.getElementById('docsPanel');
     const closeDocs = document.getElementById('closeDocs');
@@ -45,11 +43,7 @@ function initializeApp() {
 
     // Template button handling
     if (showTemplateBtn) {
-        showTemplateBtn.addEventListener('click', showTemplate);
-    }
-
-    if (hideTemplateBtn) {
-        hideTemplateBtn.addEventListener('click', hideTemplate);
+        showTemplateBtn.addEventListener('click', toggleTemplate);
     }
 
     // Edit parameters button handling
@@ -502,6 +496,15 @@ if ('scrollBehavior' in document.documentElement.style) {
     document.documentElement.style.scrollBehavior = 'smooth';
 }
 
+function toggleTemplate() {
+    const templateSection = document.getElementById('templateSection');
+    if (templateSection.style.display === 'none') {
+        showTemplate();
+    } else {
+        hideTemplate();
+    }
+}
+
 function showTemplate() {
     const printerSelect = document.getElementById('printer');
     const printerName = printerSelect.value;
@@ -516,7 +519,6 @@ function showTemplate() {
 
     // Show loading state
     const showTemplateBtn = document.getElementById('showTemplateBtn');
-    const originalText = showTemplateBtn.textContent;
     showTemplateBtn.textContent = 'Loading...';
     showTemplateBtn.disabled = true;
 
@@ -541,8 +543,8 @@ function showTemplate() {
                 customSubmitBtn.style.display = 'block';
             }
 
-            // Reset button
-            showTemplateBtn.textContent = originalText;
+            // Swap button text to hide
+            showTemplateBtn.textContent = showTemplateBtn.getAttribute('data-hide-text');
             showTemplateBtn.disabled = false;
 
             // Scroll to template section
@@ -556,7 +558,7 @@ function showTemplate() {
             showError('Failed to load template: ' + error.message);
 
             // Reset button
-            showTemplateBtn.textContent = originalText;
+            showTemplateBtn.textContent = showTemplateBtn.getAttribute('data-edit-text');
             showTemplateBtn.disabled = false;
         });
 }
@@ -565,6 +567,7 @@ function hideTemplate() {
     const templateSection = document.getElementById('templateSection');
     const templateContent = document.getElementById('templateContent');
     const customSubmitBtn = document.getElementById('submitCustomBtn');
+    const showTemplateBtn = document.getElementById('showTemplateBtn');
 
     templateSection.style.display = 'none';
     templateContent.value = '';
@@ -575,6 +578,9 @@ function hideTemplate() {
     if (customSubmitBtn) {
         customSubmitBtn.style.display = 'none';
     }
+
+    // Swap button text back to edit
+    showTemplateBtn.textContent = showTemplateBtn.getAttribute('data-edit-text');
 
     // Close documentation panel
     closeDocsPanel();

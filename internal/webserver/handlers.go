@@ -266,6 +266,17 @@ func TemplateHandler(w http.ResponseWriter, r *http.Request) {
 		buf.WriteString("\n")
 	}
 
+	// Write Assertions section
+	if len(printerDef.Assertions) > 0 {
+		buf.WriteString("[Assertions]\n")
+
+		for key, value := range printerDef.Assertions {
+			fmt.Fprintf(&buf, "%s = %s\n", key, formatAssertionRange(value))
+		}
+
+		buf.WriteString("\n")
+	}
+
 	// Write Template section with multiline string
 	buf.WriteString("[Template]\n")
 	buf.WriteString("Code = \"\"\"\n")
@@ -293,6 +304,15 @@ func formatStringSlice(slice []string) string {
 	parts := make([]string, 0, len(slice))
 	for _, s := range slice {
 		parts = append(parts, fmt.Sprintf("%q", s))
+	}
+
+	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
+}
+
+func formatAssertionRange(values []any) string {
+	parts := make([]string, 0, len(values))
+	for _, v := range values {
+		parts = append(parts, fmt.Sprintf("%v", v))
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
