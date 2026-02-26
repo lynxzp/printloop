@@ -1,0 +1,60 @@
+Name = "A1"
+
+[Markers]
+EndInitSection = ["M624"]
+EndPrintSection = ["M625"]
+# Markers requre to split gcode into sections:
+# - initialization section
+# - print section
+# - end section
+# Markers can have multiple lines
+# Multiline markers work only when all lines are found one after another
+
+[SearchStrategy]
+EndInitSectionStrategy = "before_first_appear"
+EndPrintSectionStrategy = "after_last_appear"
+# Available strategies for searching markers that split gcode into sections:
+# - after_first_appear
+# - after_last_appear
+# - before_first_appear
+
+[Parameters]
+RetractDistance = 0.8
+MoveDownBeforePush = 50.0
+MinZ = 0.5
+BackY = 255.99
+PushY = 0
+
+[Assertions]
+# Max Y limit: leave clearance between print and back edge
+# so the printhead can move down and push the part off
+MaxPrintY = [2.0, 245.0]
+# Just a sanity check to make sure gcode is not doing anything crazy
+MinPrintY = [0, 243.0]
+AveragePrintY = [1.0, 244.0]
+
+MinPrintX = [0, 254.0]
+MaxPrintX = [2.0, 256.0]
+AveragePrintX = [1.0, 255.0]
+
+[Template]
+Code = """
+======================================================================
+; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
+G1 E-{{.Config.RetractDistance}}
+G1 Y{{.Config.BackY}} ; Move back
+{{if .Request.TestPrintWithPause}}M400 U1 ; Pause for inspection - resume from printer screen {{end}}
+
+; Wait for bed cooldown if needed
+{{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Request.WaitBedCooldownTemp}} ; Set bed target temperature
+M190 R{{.Request.WaitBedCooldownTemp}} ; Wait for bed to reach temperature {{end}}
+{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout {{end}}
+
+G1 X{{printf "%.2f" .Positions.AveragePrintX}} ; Move to center of print X position
+G1 Z3 ; Move down
+G1 Y{{.Config.PushY}}; Push printed item
+G1 X{{.Positions.FirstPrintX}} Y{{.Positions.FirstPrintY}} Z{{.Positions.FirstPrintZ}}
+G1 E{{.Config.RetractDistance}}
+G1 E{{.Request.ExtraExtrude}}
+======================================================================
+"""
