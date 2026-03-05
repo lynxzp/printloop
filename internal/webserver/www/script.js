@@ -184,11 +184,13 @@ async function submitForm(useCustomTemplate) {
         }
     }
 
-    // Always add printer parameter (required)
     const printerInput = document.getElementById('printer');
-    if (printerInput && printerInput.value) {
-        formData.append('printer', printerInput.value);
+    if (!printerInput || !printerInput.value) {
+        showError(window.i18n?.selectPrinter || 'Please select a printer first');
+        resetSubmitButtons();
+        return;
     }
+    formData.append('printer', printerInput.value);
 
     // Add only enabled parameters
     const checkboxConfigs = [

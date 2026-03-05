@@ -43,7 +43,36 @@ Code = """
 ; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
 G1 E-{{.Config.RetractDistance}}
 G1 Y{{.Config.BackY}} ; Move back
-{{if .Request.TestPrintWithPause}}M400 U1 ; Pause for inspection - resume from printer screen {{end}}
+{{if .Request.TestPrintWithPause}}
+;music;)
+M17
+M400 S1
+M1006 S1
+M1006 L70 M70 N99
+M1006 A47 B38 L69
+M1006 A46 B18 L69
+M1006 A47 B19 L69
+M1006 A44 B38 L69
+M73 P266 R-1
+M1006 A47 B37 L69
+M1006 A46 B19 L69
+M1006 A47 B19 L69
+M1006 A44 B37 L69
+M73 P533 R-1
+M1006 A47 B38 L69
+M1006 A46 B18 L69
+M1006 A47 B19 L69
+M73 P800 R-1
+M1006 A44 B38 L69
+M1006 A47 B37 L69
+M1006 A46 B19 L69
+M1006 A47 B19 L69
+M73 P1066 R-1
+M1006 A44 B37 L69
+M1006 W
+M18
+M400 U1 ; Pause for inspection - resume from printer screen
+{{end}}
 
 ; Wait for bed cooldown if needed
 {{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Request.WaitBedCooldownTemp}} ; Set bed target temperature
