@@ -99,6 +99,7 @@ type MarkerPositions struct {
 	MinPrintY                float64 // Min Y coordinate across all print commands (G1 with positive E)
 	MaxPrintX                float64 // Max X coordinate across all print commands (G1 with positive E)
 	MaxPrintY                float64 // Max Y coordinate across all print commands (G1 with positive E)
+	BedTemp                  int64   // Bed temperature from last M190 command in init section (0 = not detected)
 }
 
 // GCodeCoordinates holds parsed G-code coordinates
@@ -300,6 +301,12 @@ func (p *StreamingProcessor) ProcessFile(inputPath, outputPath string) error {
 
 	p.positions = *pos
 
+	// Validate bed temperature is available when the template actually uses it
+	templateUsesBedTemp := strings.Contains(p.printerDef.Template.Code, ".Positions.BedTemp")
+	if templateUsesBedTemp && p.config.WaitBedCooldownTemp > 0 && p.positions.BedTemp == 0 {
+		return errors.New("bed cooldown enabled but no M190 (set bed temperature) command found in init section")
+	}
+
 	// Validate assertions against found positions
 	err = validateAssertions(p.positions, p.printerDef.Assertions)
 	if err != nil {
@@ -372,6 +379,12 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 		return nil, errors.New("invalid marker positions: start marker ends after or at end marker")
 	}
 
+	// Extract bed temperature from init section
+	bedTemp, err := extractBedTemp(filePath, initLast)
+	if err != nil {
+		return nil, err
+	}
+
 	// Extract G-code coordinates
 	firstPrintX, firstPrintY, firstPrintZ, lastPrintX, lastPrintY, lastPrintZ, avgPrintX, avgPrintY, minPrintX, minPrintY, maxPrintX, maxPrintY, err := p.extractGCodeCoordinates(filePath, initLast)
 	if err != nil {
@@ -395,6 +408,7 @@ func (p *StreamingProcessor) findMarkerPositions(filePath string) (*MarkerPositi
 		MinPrintY:                minPrintY,
 		MaxPrintX:                maxPrintX,
 		MaxPrintY:                maxPrintY,
+		BedTemp:                  bedTemp,
 	}
 
 	return positions, nil
@@ -730,6 +744,46 @@ func (p *StreamingProcessor) streamGeneratedContent(writer *bufio.Writer, iterat
 	}
 
 	return nil
+}
+
+// extractBedTemp scans the init section (lines 0 to endInitSectionLastLine) for M190 S<temp> commands.
+// Returns the temperature from the last M190 found, or 0 if none found.
+func extractBedTemp(filePath string, endInitSectionLastLine int64) (int64, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open file for bed temp extraction: %w", err)
+	}
+	defer file.Close()
+
+	m190Regex := regexp.MustCompile(`^M190\s*S(\d+)`)
+
+	var bedTemp int64
+
+	scanner := bufio.NewScanner(file)
+	lineNum := int64(0)
+
+	for scanner.Scan() {
+		if lineNum > endInitSectionLastLine {
+			break
+		}
+
+		trimmed := strings.TrimSpace(scanner.Text())
+		if match := m190Regex.FindStringSubmatch(trimmed); match != nil {
+			temp, err := strconv.ParseInt(match[1], 10, 64)
+			if err == nil {
+				bedTemp = temp
+			}
+		}
+
+		lineNum++
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		return 0, fmt.Errorf("failed to scan file for bed temp: %w", err)
+	}
+
+	return bedTemp, nil
 }
 
 // processLineWithMarkerSplit splits a line if it contains a marker followed by a comment

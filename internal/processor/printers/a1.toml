@@ -16,7 +16,6 @@ EndPrintSectionStrategy = "after_last_appear"
 # Available strategies for searching markers that split gcode into sections:
 # - after_first_appear
 # - after_last_appear
-
 # - before_first_appear
 
 [Parameters]
@@ -39,12 +38,18 @@ AveragePrintX = [1.0, 255.0]
 
 [Template]
 Code = """
-======================================================================
+; ======================================================================
 ; Generated code for {{.PrinterName}} - Iteration {{.Iteration}}
 G1 E-{{.Config.RetractDistance}}
 G1 Y{{.Config.BackY}} ; Move back
+
+; Wait for bed cooldown if needed
+{{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Request.WaitBedCooldownTemp}} ; Set bed target temperature
+M190 R{{.Request.WaitBedCooldownTemp}} ; Wait for bed to reach temperature {{end}}
+{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout {{end}}
+
 {{if .Request.TestPrintWithPause}}
-;music;)
+;music
 M17
 M400 S1
 M1006 S1
@@ -74,16 +79,14 @@ M18
 M400 U1 ; Pause for inspection - resume from printer screen
 {{end}}
 
-; Wait for bed cooldown if needed
-{{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Request.WaitBedCooldownTemp}} ; Set bed target temperature
-M190 R{{.Request.WaitBedCooldownTemp}} ; Wait for bed to reach temperature {{end}}
-{{if gt .Request.WaitMin 0}}G4 S{{mul .Request.WaitMin 60}} ; Wait timeout {{end}}
-
 G1 X{{printf "%.2f" .Positions.AveragePrintX}} ; Move to center of print X position
 G1 Z3 ; Move down
 G1 Y{{.Config.PushY}}; Push printed item
 G1 X{{.Positions.FirstPrintX}} Y{{.Positions.FirstPrintY}} Z{{.Positions.FirstPrintZ}}
+
+{{if gt .Request.WaitBedCooldownTemp 0}}M190 S{{.Positions.BedTemp}} {{end}} ; Re-heat bed to original temperature
+
 G1 E{{.Config.RetractDistance}}
 G1 E{{.Request.ExtraExtrude}}
-======================================================================
+; ======================================================================
 """

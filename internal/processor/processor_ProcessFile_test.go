@@ -1432,3 +1432,193 @@ M625`,
 		})
 	}
 }
+
+func TestExtractBedTemp(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		lines        []string
+		initLastLine int64
+		expected     int64
+	}{
+		{
+			name:         "standard M190 S77",
+			lines:        []string{"G28", "M190 S77", "M104 S210", "M625"},
+			initLastLine: 2,
+			expected:     77,
+		},
+		{
+			name:         "M190 with comment",
+			lines:        []string{"G28", "M190 S77 ; set bed temp", "M625"},
+			initLastLine: 1,
+			expected:     77,
+		},
+		{
+			name:         "M190 no space before S",
+			lines:        []string{"G28", "M190S77", "M625"},
+			initLastLine: 1,
+			expected:     77,
+		},
+		{
+			name:         "M190 with leading whitespace",
+			lines:        []string{"G28", "  M190 S77", "M625"},
+			initLastLine: 1,
+			expected:     77,
+		},
+		{
+			name:         "multiple M190 - last wins",
+			lines:        []string{"M190 S50", "M190 S60", "M190 S77", "M625"},
+			initLastLine: 2,
+			expected:     77,
+		},
+		{
+			name:         "no M190 in init section",
+			lines:        []string{"G28", "M104 S210", "M625"},
+			initLastLine: 1,
+			expected:     0,
+		},
+		{
+			name:         "M190 R77 only - no S parameter",
+			lines:        []string{"G28", "M190 R77", "M625"},
+			initLastLine: 1,
+			expected:     0,
+		},
+		{
+			name:         "M190 with no parameter",
+			lines:        []string{"G28", "M190", "M625"},
+			initLastLine: 1,
+			expected:     0,
+		},
+		{
+			name:         "M190 after init section - ignored",
+			lines:        []string{"G28", "M104 S210", "M190 S77", "M625"},
+			initLastLine: 1,
+			expected:     0,
+		},
+		{
+			name:         "M190 with semicolon comment no space",
+			lines:        []string{"G28", "M190 S77;set bed temp", "M625"},
+			initLastLine: 1,
+			expected:     77,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "test.gcode")
+
+			err := writeLinesToFile(filePath, tt.lines)
+			if err != nil {
+				t.Fatalf("Failed to write test file: %v", err)
+			}
+
+			result, err := extractBedTemp(filePath, tt.initLastLine)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if result != tt.expected {
+				t.Errorf("Expected bed temp %d, got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestProcessFile_BedCooldownWithoutM190_TemplateDoesNotUseBedTemp(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	inputPath := filepath.Join(tempDir, "input.gcode")
+	outputPath := filepath.Join(tempDir, "output.gcode")
+
+	// G-code without M190 in init section
+	input := []string{
+		"M211 X0 Y0 Z0 ;turn off soft endstop",
+		"M1007 S1",
+		"G1 X50.0 Y50.0 E0.1",
+		"M625",
+	}
+
+	err := writeLinesToFile(inputPath, input)
+	if err != nil {
+		t.Fatalf("Failed to write input file: %v", err)
+	}
+
+	// unit-tests-gcode2 template does not reference .Positions.BedTemp,
+	// so validation should be skipped even with cooldown enabled
+	config := ProcessingRequest{
+		Iterations:          2,
+		Printer:             "unit-tests-gcode2",
+		WaitBedCooldownTemp: 40,
+	}
+
+	processor, err := NewStreamingProcessor(config)
+	if err != nil {
+		t.Fatalf("Failed to create processor: %v", err)
+	}
+
+	err = processor.ProcessFile(inputPath, outputPath)
+	if err != nil {
+		t.Fatalf("Expected no error for template without BedTemp reference, got: %v", err)
+	}
+}
+
+func TestProcessFile_BedCooldownWithoutM190_TemplateUsesBedTemp(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	inputPath := filepath.Join(tempDir, "input.gcode")
+	outputPath := filepath.Join(tempDir, "output.gcode")
+
+	// G-code without M190 in init section
+	input := []string{
+		"M211 X0 Y0 Z0 ;turn off soft endstop",
+		"M1007 S1",
+		"G1 X50.0 Y50.0 E0.1",
+		"M625",
+	}
+
+	err := writeLinesToFile(inputPath, input)
+	if err != nil {
+		t.Fatalf("Failed to write input file: %v", err)
+	}
+
+	// Custom template that references .Positions.BedTemp should trigger validation
+	customTemplate := `
+Name = "test-bedtemp"
+[Markers]
+EndInitSection = ["M211 X0 Y0 Z0 ;turn off soft endstop", "M1007 S1"]
+EndPrintSection = ["M625"]
+[SearchStrategy]
+EndInitSectionStrategy = "after_first_appear"
+EndPrintSectionStrategy = "after_last_appear"
+[Template]
+Code = """M190 S{{.Positions.BedTemp}}
+; Iteration {{.Iteration}}"""
+`
+
+	config := ProcessingRequest{
+		Iterations:          2,
+		Printer:             "unit-tests-gcode2",
+		WaitBedCooldownTemp: 40,
+		CustomTemplate:      customTemplate,
+	}
+
+	processor, err := NewStreamingProcessor(config)
+	if err != nil {
+		t.Fatalf("Failed to create processor: %v", err)
+	}
+
+	err = processor.ProcessFile(inputPath, outputPath)
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+
+	if !strings.Contains(err.Error(), "M190") {
+		t.Errorf("Expected error about M190 not found, got: %v", err)
+	}
+}
