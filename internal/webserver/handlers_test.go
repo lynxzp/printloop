@@ -63,7 +63,7 @@ func TestHomeHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, "/", nil)
+			req := httptest.NewRequestWithContext(t.Context(), tt.method, "/", nil)
 			w := httptest.NewRecorder()
 
 			HomeHandler(w, req)
@@ -101,8 +101,10 @@ func TestUploadHandler(t *testing.T) {
 	}{
 		{
 			name: "invalid form data",
-			setupRequest: func(_ *testing.T) *http.Request {
-				req := httptest.NewRequest("POST", "/upload", strings.NewReader("invalid"))
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", strings.NewReader("invalid"))
 				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 				return req
@@ -125,7 +127,7 @@ func TestUploadHandler(t *testing.T) {
 				_ = writer.WriteField("iterations", "5")
 				_ = writer.Close()
 
-				req := httptest.NewRequest("POST", "/upload", &buf)
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
 
 				return req
@@ -170,7 +172,7 @@ func TestUploadHandler(t *testing.T) {
 				_, _ = part.Write([]byte(largeContent))
 				_ = writer.Close()
 
-				req := httptest.NewRequest("POST", "/upload", &buf)
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
 
 				return req
@@ -458,7 +460,7 @@ func TestReceiveRequest(t *testing.T) {
 				_ = writer.WriteField("iterations", "5")
 				_ = writer.Close()
 
-				req := httptest.NewRequest("POST", "/upload", &buf)
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
 
 				return req
@@ -531,7 +533,7 @@ func TestReceiveRequest(t *testing.T) {
 				_, _ = part.Write([]byte("test content"))
 				_ = writer.Close()
 
-				req := httptest.NewRequest("POST", "/upload", &buf)
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
 				req.Header.Set("Content-Type", writer.FormDataContentType())
 
 				return req
@@ -647,7 +649,7 @@ func TestTemplateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			req := httptest.NewRequest(tt.method, "/template"+tt.queryParams, nil)
+			req := httptest.NewRequestWithContext(t.Context(), tt.method, "/template"+tt.queryParams, nil)
 			w := httptest.NewRecorder()
 
 			TemplateHandler(w, req)
@@ -672,7 +674,7 @@ func TestStaticFileServer(t *testing.T) {
 	// The actual file serving is tested by Go's http.FileServer tests
 
 	// We can do a basic smoke test to ensure it doesn't panic
-	req := httptest.NewRequest("GET", "/style.css", nil)
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/style.css", nil)
 	w := httptest.NewRecorder()
 
 	// This will return 404 since we don't have actual files, but shouldn't panic
@@ -716,7 +718,7 @@ func createUploadRequestWithParams(t *testing.T, params map[string]string) *http
 
 	_ = writer.Close()
 
-	req := httptest.NewRequest("POST", "/upload", &buf)
+	req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	return req
