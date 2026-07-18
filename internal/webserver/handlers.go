@@ -8,13 +8,13 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
 	"path"
 	"printloop/internal/processor"
 	"strconv"
 	"strings"
-	"time"
 )
 
 //go:embed www/*
@@ -80,7 +80,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Determine language for error messages
 	lang := GetLanguageFromRequest(r)
 
-	req, err := receiveRequest(w, r)
+	req, workDir, err := receiveRequest(w, r)
 	if err != nil {
 		log.Error("Failed to receive request", "error", err)
 		WriteErrorResponseWithLang(w, err, http.StatusBadRequest, lang)
@@ -88,11 +88,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inFileName := path.Join("files/uploads", req.FileName)
-	outFileName := path.Join("files/results", req.FileName)
+	defer func() {
+		rmErr := os.RemoveAll(workDir)
+		if rmErr != nil {
+			log.Error("Failed to remove work directory", "dir", workDir, "error", rmErr)
+		}
+	}()
 
-	defer os.Remove(inFileName)
-	defer os.Remove(outFileName)
+	inFileName := path.Join(workDir, req.FileName)
+	resultName := resultFileName(req.FileName, req.Iterations)
+	outFileName := path.Join(workDir, resultName)
 
 	err = processor.ProcessFile(inFileName, outFileName, req)
 	if err != nil {
@@ -102,7 +107,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sendResponse(w, req)
+	err = sendResponse(w, outFileName, resultName)
 	if err != nil {
 		log.Error("Failed to send response", "error", err)
 		WriteErrorResponseWithLang(w, err, http.StatusInternalServerError, lang)
@@ -110,20 +115,24 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info("Request processed", "filename", req.FileName)
+	log.Info("Request processed", "filename", resultName)
 }
 
-func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error {
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", req.FileName))
-	w.Header().Set("Content-Type", "application/octet-stream")
-
-	fileName := path.Join("files/results", req.FileName)
-
-	file, err := os.Open(fileName)
+func sendResponse(w http.ResponseWriter, filePath, downloadName string) error {
+	file, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to open result file %s: %w", fileName, err)
+		return fmt.Errorf("failed to open result file %s: %w", filePath, err)
 	}
 	defer file.Close()
+
+	disposition := mime.FormatMediaType("attachment", map[string]string{"filename": downloadName})
+	if disposition == "" {
+		// FormatMediaType returns "" for values it cannot encode; fall back to a bare attachment
+		disposition = "attachment"
+	}
+
+	w.Header().Set("Content-Disposition", disposition)
+	w.Header().Set("Content-Type", "application/octet-stream")
 
 	_, err = io.Copy(w, file)
 	if err != nil {
@@ -133,7 +142,7 @@ func sendResponse(w http.ResponseWriter, req processor.ProcessingRequest) error 
 	return nil
 }
 
-func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.ProcessingRequest, error) {
+func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.ProcessingRequest, string, error) {
 	var req processor.ProcessingRequest
 
 	const maxFileSize = 1024 * 1024 * 1024
@@ -142,7 +151,7 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 
 	err := r.ParseMultipartForm(1024 * 1024) // receive up to 1MB of form data
 	if err != nil {
-		return req, fmt.Errorf("form parsing error: %w", err)
+		return req, "", fmt.Errorf("form parsing error: %w", err)
 	}
 
 	iterationsS := r.FormValue("iterations")
@@ -150,32 +159,32 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 	req.Iterations, err = strconv.ParseInt(iterationsS, 10, 64)
 
 	if err != nil || req.Iterations < 2 || req.Iterations > 10000 {
-		return req, fmt.Errorf("invalid iterations value %v: must be between 2 and 10000", iterationsS)
+		return req, "", fmt.Errorf("invalid iterations value %v: must be between 2 and 10000", iterationsS)
 	}
 
 	waitBedCooldownTempS := r.FormValue("waitBedCooldownTemp")
 
 	req.WaitBedCooldownTemp, err = strconv.ParseInt(waitBedCooldownTempS, 10, 64)
 	if (err != nil || req.WaitBedCooldownTemp < 0) && waitBedCooldownTempS != "" {
-		return req, fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
+		return req, "", fmt.Errorf("invalid wait_temp value %v: %w", waitBedCooldownTempS, err)
 	}
 
 	if req.WaitBedCooldownTemp < 40 && waitBedCooldownTempS != "" {
-		return req, errors.New("bed cooldown temperature must be at least 40°C - Bambulab printers ignore lower values")
+		return req, "", errors.New("bed cooldown temperature must be at least 40°C - Bambulab printers ignore lower values")
 	}
 
 	waitMinS := r.FormValue("wait_min")
 
 	req.WaitMin, err = strconv.ParseInt(waitMinS, 10, 64)
 	if (err != nil || req.WaitMin < 0) && waitMinS != "" {
-		return req, fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
+		return req, "", fmt.Errorf("invalid wait_min value %v: %w", waitMinS, err)
 	}
 
 	extraExtrudeS := r.FormValue("extra_extrude")
 
 	req.ExtraExtrude, err = strconv.ParseFloat(extraExtrudeS, 64)
 	if (err != nil || req.ExtraExtrude < 0) && extraExtrudeS != "" {
-		return req, fmt.Errorf("invalid extra_extrude value %v: %w", waitMinS, err)
+		return req, "", fmt.Errorf("invalid extra_extrude value %v: %w", waitMinS, err)
 	}
 
 	req.Printer = r.FormValue("printer")
@@ -191,27 +200,33 @@ func receiveRequest(w http.ResponseWriter, r *http.Request) (processor.Processin
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		return req, fmt.Errorf("file retrieval error: %w", err)
+		return req, "", fmt.Errorf("file retrieval error: %w", err)
 	}
 	defer file.Close()
 
-	timestamp := time.Now().Unix()
-	req.FileName = fmt.Sprintf("%d_%s", timestamp, header.Filename)
-	filepath := path.Join("files/uploads", req.FileName)
+	req.FileName = sanitizeFileName(header.Filename)
 
-	dst, err := os.Create(filepath)
+	workDir, err := os.MkdirTemp("files", "job-")
 	if err != nil {
-		return req, fmt.Errorf("file creation failed: %w", err)
+		return req, "", fmt.Errorf("failed to create work directory: %w", err)
+	}
+
+	dst, err := os.Create(path.Join(workDir, req.FileName))
+	if err != nil {
+		// best-effort cleanup; the request already failed
+		_ = os.RemoveAll(workDir)
+		return req, "", fmt.Errorf("file creation failed: %w", err)
 	}
 	defer dst.Close()
 
 	_, err = io.Copy(dst, file)
 	if err != nil {
-		_ = os.Remove(filepath)
-		return req, fmt.Errorf("file saving error: %w", err)
+		// best-effort cleanup; the request already failed
+		_ = os.RemoveAll(workDir)
+		return req, "", fmt.Errorf("file saving error: %w", err)
 	}
 
-	return req, nil
+	return req, workDir, nil
 }
 
 func TemplateHandler(w http.ResponseWriter, r *http.Request) {

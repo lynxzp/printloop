@@ -5,7 +5,7 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o printloop .
-RUN mkdir -p /app/files/uploads /app/files/results /app/tmp && \
+RUN mkdir -p /app/files /app/tmp && \
     chown -R scratchuser:scratchuser /app/files && \
     chown -R scratchuser:scratchuser /app/tmp
 

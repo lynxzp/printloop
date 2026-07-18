@@ -52,6 +52,7 @@ linters:
         linters:
           - paralleltest
           - tparallel
+          - maintidx
       - path: "internal/processor/strategy/.*.go"
         linters:
           - dupl

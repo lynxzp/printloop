@@ -242,9 +242,17 @@ async function submitForm(useCustomTemplate) {
             const disposition = response.headers.get('Content-Disposition');
             let filename = 'processed_file';
             if (disposition) {
-                const matches = disposition.match(/filename="([^"]+)"/);
-                if (matches) {
-                    filename = matches[1];
+                // RFC 6266: filename* (percent-encoded) takes precedence over filename,
+                // which may be quoted or a bare token
+                const star = disposition.match(/filename\*=utf-8''([^;]+)/i);
+                const quoted = disposition.match(/filename="((?:[^"\\]|\\.)*)"/);
+                const token = disposition.match(/filename=([^;"\s]+)/);
+                if (star) {
+                    filename = decodeURIComponent(star[1]);
+                } else if (quoted) {
+                    filename = quoted[1].replace(/\\(.)/g, '$1');
+                } else if (token) {
+                    filename = token[1];
                 }
             }
 

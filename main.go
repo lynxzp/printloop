@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"printloop/internal/webserver"
 	"strconv"
 )
@@ -25,17 +26,7 @@ func main() {
 		return
 	}
 
-	err = os.MkdirAll("files/uploads", 0755)
-	if err != nil {
-		slog.Error("Failed to create files/uploads directory:", "err", err)
-		return
-	}
-
-	err = os.MkdirAll("files/results", 0755)
-	if err != nil {
-		slog.Error("Failed to create files/results directory:", "err", err)
-		return
-	}
+	cleanupStaleWorkDirs()
 
 	mux := http.NewServeMux()
 
@@ -103,4 +94,21 @@ func initLogger() {
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+}
+
+// cleanupStaleWorkDirs removes per-request work directories left behind by a
+// previous run that crashed or was killed mid-request.
+func cleanupStaleWorkDirs() {
+	stale, err := filepath.Glob("files/job-*")
+	if err != nil {
+		slog.Warn("Failed to scan for stale work directories", "err", err)
+		return
+	}
+
+	for _, dir := range stale {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			slog.Warn("Failed to remove stale work directory", "dir", dir, "err", err)
+		}
+	}
 }

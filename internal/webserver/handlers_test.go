@@ -3,11 +3,13 @@ package webserver
 
 import (
 	"bytes"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"printloop/internal/processor"
 	"strings"
 	"testing"
@@ -78,15 +80,12 @@ func TestHomeHandler(t *testing.T) {
 }
 
 func TestUploadHandler(t *testing.T) {
-	t.Helper()
 	// Setup test directories
 	setupTestDirs := func(t *testing.T) {
 		t.Helper()
 
-		err := os.MkdirAll("files/uploads", 0755)
+		err := os.MkdirAll("files", 0755)
 
-		require.NoError(t, err)
-		err = os.MkdirAll("files/results", 0755)
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			os.RemoveAll("files")
@@ -184,6 +183,39 @@ func TestUploadHandler(t *testing.T) {
 				assert.Contains(t, w.Body.String(), "invalid_printer_name")
 			},
 		},
+		{
+			name: "successful processing returns file with _xN suffix",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				var buf bytes.Buffer
+
+				writer := multipart.NewWriter(&buf)
+				_ = writer.WriteField("iterations", "2")
+				_ = writer.WriteField("printer", "unit-tests")
+
+				part, err := writer.CreateFormFile("file", "model.gcode")
+				require.NoError(t, err)
+
+				_, _ = part.Write([]byte("HEADER\nSTART_PRINT\nBODY\nEND_PRINT\nFOOTER\n"))
+				_ = writer.Close()
+
+				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
+				req.Header.Set("Content-Type", writer.FormDataContentType())
+
+				return req
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
+
+				mediaType, params, err := mime.ParseMediaType(w.Header().Get("Content-Disposition"))
+				require.NoError(t, err)
+				assert.Equal(t, "attachment", mediaType)
+				assert.Equal(t, "model_x2.gcode", params["filename"])
+				assert.Contains(t, w.Body.String(), "; Generated code - Iteration 2")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -200,119 +232,129 @@ func TestUploadHandler(t *testing.T) {
 			if tt.checkResponse != nil {
 				tt.checkResponse(t, w)
 			}
+
+			leftovers, err := filepath.Glob("files/job-*")
+			require.NoError(t, err)
+			assert.Empty(t, leftovers, "work directories must be removed after the request")
 		})
 	}
 }
 
 func TestSendResponse(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		name           string
-		setupFile      func(t *testing.T) processor.ProcessingRequest
-		expectedStatus int
-		checkResponse  func(t *testing.T, w *httptest.ResponseRecorder, req processor.ProcessingRequest)
+		name          string
+		setupFile     func(t *testing.T) (filePath, downloadName string)
+		expectedError bool
+		checkResponse func(t *testing.T, w *httptest.ResponseRecorder)
 	}{
 		{
 			name: "valid file send",
-			setupFile: func(t *testing.T) processor.ProcessingRequest {
+			setupFile: func(t *testing.T) (string, string) {
 				t.Helper()
 
-				err := os.MkdirAll("files/results", 0755)
-				require.NoError(t, err)
-				t.Cleanup(func() { os.RemoveAll("files") })
-
-				fileName := "test_file.txt"
-				content := "test content"
-				filePath := path.Join("files/results", fileName)
-				err = os.WriteFile(filePath, []byte(content), 0644)
+				filePath := path.Join(t.TempDir(), "result.gcode")
+				err := os.WriteFile(filePath, []byte("test content"), 0644)
 				require.NoError(t, err)
 
-				return processor.ProcessingRequest{FileName: fileName}
+				return filePath, "test_file_x5.gcode"
 			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder, req processor.ProcessingRequest) {
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
 				assert.Equal(t, "application/octet-stream", w.Header().Get("Content-Type"))
-				assert.Contains(t, w.Header().Get("Content-Disposition"), req.FileName)
+
+				mediaType, params, err := mime.ParseMediaType(w.Header().Get("Content-Disposition"))
+				require.NoError(t, err)
+				assert.Equal(t, "attachment", mediaType)
+				assert.Equal(t, "test_file_x5.gcode", params["filename"])
 				assert.Equal(t, "test content", w.Body.String())
 			},
 		},
 		{
 			name: "file not found",
-			setupFile: func(t *testing.T) processor.ProcessingRequest {
+			setupFile: func(t *testing.T) (string, string) {
 				t.Helper()
-
-				err := os.MkdirAll("files/results", 0755)
-				require.NoError(t, err)
-				t.Cleanup(func() { os.RemoveAll("files") })
-
-				return processor.ProcessingRequest{FileName: "nonexistent.txt"}
+				return path.Join(t.TempDir(), "nonexistent.gcode"), "nonexistent.gcode"
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedError: true,
 		},
 		{
 			name: "empty file",
-			setupFile: func(t *testing.T) processor.ProcessingRequest {
+			setupFile: func(t *testing.T) (string, string) {
 				t.Helper()
 
-				err := os.MkdirAll("files/results", 0755)
-				require.NoError(t, err)
-				t.Cleanup(func() { os.RemoveAll("files") })
-
-				fileName := "empty_file.txt"
-				filePath := path.Join("files/results", fileName)
-				err = os.WriteFile(filePath, []byte(""), 0644)
+				filePath := path.Join(t.TempDir(), "empty.gcode")
+				err := os.WriteFile(filePath, []byte(""), 0644)
 				require.NoError(t, err)
 
-				return processor.ProcessingRequest{FileName: fileName}
+				return filePath, "empty_x2.gcode"
 			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder, _ processor.ProcessingRequest) {
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
 				assert.Empty(t, w.Body.String())
 			},
 		},
 		{
-			name: "special characters in filename",
-			setupFile: func(t *testing.T) processor.ProcessingRequest {
+			name: "special characters in download name",
+			setupFile: func(t *testing.T) (string, string) {
 				t.Helper()
 
-				err := os.MkdirAll("files/results", 0755)
+				filePath := path.Join(t.TempDir(), "result.gcode")
+				err := os.WriteFile(filePath, []byte("special content"), 0644)
 				require.NoError(t, err)
 
-				t.Cleanup(func() { os.RemoveAll("files") })
-
-				fileName := "test file with spaces & symbols.txt"
-				content := "special content"
-				filePath := path.Join("files/results", fileName)
-				err = os.WriteFile(filePath, []byte(content), 0644)
-				require.NoError(t, err)
-
-				return processor.ProcessingRequest{FileName: fileName}
+				return filePath, `test "quoted" & symbols_x5.gcode`
 			},
-			expectedStatus: http.StatusOK,
-			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder, req processor.ProcessingRequest) {
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.Contains(t, w.Header().Get("Content-Disposition"), req.FileName)
+
+				mediaType, params, err := mime.ParseMediaType(w.Header().Get("Content-Disposition"))
+				require.NoError(t, err)
+				assert.Equal(t, "attachment", mediaType)
+				assert.Equal(t, `test "quoted" & symbols_x5.gcode`, params["filename"])
 				assert.Equal(t, "special content", w.Body.String())
+			},
+		},
+		{
+			name: "non-ascii download name",
+			setupFile: func(t *testing.T) (string, string) {
+				t.Helper()
+
+				filePath := path.Join(t.TempDir(), "result.gcode")
+				err := os.WriteFile(filePath, []byte("cyrillic content"), 0644)
+				require.NoError(t, err)
+
+				return filePath, "модель_x5.gcode"
+			},
+			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
+
+				mediaType, params, err := mime.ParseMediaType(w.Header().Get("Content-Disposition"))
+				require.NoError(t, err)
+				assert.Equal(t, "attachment", mediaType)
+				assert.Equal(t, "модель_x5.gcode", params["filename"])
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := tt.setupFile(t)
+			t.Parallel()
+
+			filePath, downloadName := tt.setupFile(t)
 			w := httptest.NewRecorder()
 
-			err := sendResponse(w, req)
+			err := sendResponse(w, filePath, downloadName)
 
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
 				require.NoError(t, err)
 
 				if tt.checkResponse != nil {
-					tt.checkResponse(t, w, req)
+					tt.checkResponse(t, w)
 				}
-			} else {
-				assert.Error(t, err)
 			}
 		})
 	}
@@ -323,7 +365,7 @@ func TestReceiveRequest(t *testing.T) {
 	setupTestDirs := func(t *testing.T) {
 		t.Helper()
 
-		err := os.MkdirAll("files/uploads", 0755)
+		err := os.MkdirAll("files", 0755)
 
 		require.NoError(t, err)
 		t.Cleanup(func() {
@@ -351,7 +393,7 @@ func TestReceiveRequest(t *testing.T) {
 				assert.Equal(t, int64(60), req.WaitMin)
 				assert.InEpsilon(t, 0.1, req.ExtraExtrude, 0.00001)
 				assert.Equal(t, "test_printer", req.Printer)
-				assert.Contains(t, req.FileName, "test.txt")
+				assert.Equal(t, "test.txt", req.FileName)
 			},
 		},
 		{
@@ -521,27 +563,48 @@ func TestReceiveRequest(t *testing.T) {
 			name: "filename with special characters",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-
-				var buf bytes.Buffer
-
-				writer := multipart.NewWriter(&buf)
-				_ = writer.WriteField("iterations", "5")
-
-				part, err := writer.CreateFormFile("file", "test file with spaces & symbols.gcode")
-				require.NoError(t, err)
-
-				_, _ = part.Write([]byte("test content"))
-				_ = writer.Close()
-
-				req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
-				req.Header.Set("Content-Type", writer.FormDataContentType())
-
-				return req
+				return createUploadRequestWithFileName(t, "test file with spaces & symbols.gcode")
 			},
 			expectedError: false,
 			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
 				t.Helper()
-				assert.Contains(t, req.FileName, "test file with spaces & symbols.gcode")
+				assert.Equal(t, "test file with spaces & symbols.gcode", req.FileName)
+			},
+		},
+		{
+			name: "path traversal filename is reduced to base name",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createUploadRequestWithFileName(t, "../../evil.gcode")
+			},
+			expectedError: false,
+			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
+				t.Helper()
+				assert.Equal(t, "evil.gcode", req.FileName)
+			},
+		},
+		{
+			name: "windows full path filename is reduced to base name",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createUploadRequestWithFileName(t, `C:\Users\bob\part.gcode`)
+			},
+			expectedError: false,
+			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
+				t.Helper()
+				assert.Equal(t, "part.gcode", req.FileName)
+			},
+		},
+		{
+			name: "double dot filename falls back to default name",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createUploadRequestWithFileName(t, "..")
+			},
+			expectedError: false,
+			validateReq: func(t *testing.T, req processor.ProcessingRequest) {
+				t.Helper()
+				assert.Equal(t, "input.gcode", req.FileName)
 			},
 		},
 	}
@@ -553,12 +616,17 @@ func TestReceiveRequest(t *testing.T) {
 			req := tt.setupRequest(t)
 			w := httptest.NewRecorder()
 
-			result, err := receiveRequest(w, req)
+			result, workDir, err := receiveRequest(w, req)
 
 			if tt.expectedError {
-				assert.Error(t, err)
+				require.Error(t, err)
+				assert.Empty(t, workDir)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
+				assert.True(t, strings.HasPrefix(workDir, path.Join("files", "job-")),
+					"workDir must be created inside files/: %s", workDir)
+				assert.DirExists(t, workDir)
+				assert.FileExists(t, path.Join(workDir, result.FileName))
 
 				if tt.validateReq != nil {
 					tt.validateReq(t, result)
@@ -716,6 +784,26 @@ func createUploadRequestWithParams(t *testing.T, params map[string]string) *http
 		_, _ = part.Write([]byte("test file content"))
 	}
 
+	_ = writer.Close()
+
+	req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	return req
+}
+
+func createUploadRequestWithFileName(t *testing.T, fileName string) *http.Request {
+	t.Helper()
+
+	var buf bytes.Buffer
+
+	writer := multipart.NewWriter(&buf)
+	_ = writer.WriteField("iterations", "5")
+
+	part, err := writer.CreateFormFile("file", fileName)
+	require.NoError(t, err)
+
+	_, _ = part.Write([]byte("test content"))
 	_ = writer.Close()
 
 	req := httptest.NewRequestWithContext(t.Context(), "POST", "/upload", &buf)
