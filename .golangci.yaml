@@ -6,6 +6,7 @@ linters:
   disable:
     - depguard # we have a small number of dependencies, and a lot of false alarm to internal packages
     - exhaustruct # is overkill
+    - exhaustruct_v5 # is overkill (v1 renamed, kept enabled via default: all)
     - gomodguard # deprecated, replaced by gomodguard_v2 (kept enabled via default: all)
     - mnd # deprecated
     - nlreturn
