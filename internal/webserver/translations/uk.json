@@ -11,7 +11,7 @@
   "edit_automation_script": "Редагувати скрипт автоматизації для досвідчених користувачів",
   "hide_automation_script": "Сховати скрипт автоматизації",
   "additional_settings": "Додаткові налаштування",
-  "iteration_number": "Кількість циклів:",
+  "iteration_number": "Повторити:",
   "cycles": "циклів",
   "wait_bed_cooldown": "Температура охолодження столу:",
   "additional_wait_time": "Додаткове очікування після охолодження:",

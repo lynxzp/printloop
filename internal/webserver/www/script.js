@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
+// Optional numeric parameters: an unchecked box means the value is not sent at
+// all, so the printer template falls back to its own default.
+const OPTIONAL_PARAMETERS = [
+    { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
+    { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
+    { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' }
+];
+
 function initializeApp() {
     const form = document.getElementById('uploadForm');
     const fileInput = document.getElementById('file');
@@ -70,8 +78,28 @@ function initializeApp() {
     // Add input validation and formatting
     setupSelectValidation();
 
+    setupParameterToggles();
+
     // Initialize hint system
     initializeHintSystem();
+}
+
+function setupParameterToggles() {
+    OPTIONAL_PARAMETERS.forEach(({ checkboxId, inputId }) => {
+        const checkbox = document.getElementById(checkboxId);
+        const input = document.getElementById(inputId);
+        if (!checkbox || !input) {
+            return;
+        }
+
+        // A disabled input is also skipped by HTML5 `required` validation.
+        const syncInput = () => {
+            input.disabled = !checkbox.checked;
+        };
+
+        checkbox.addEventListener('change', syncInput);
+        syncInput();
+    });
 }
 
 function setupSelectValidation() {
@@ -193,29 +221,18 @@ async function submitForm(useCustomTemplate) {
     formData.append('printer', printerInput.value);
 
     // Add only enabled parameters
-    const checkboxConfigs = [
-        { checkboxId: 'waitBedCooldownTempCheckbox', inputId: 'waitBedCooldownTemp', name: 'waitBedCooldownTemp' },
-        { checkboxId: 'wait_min_checkbox', inputId: 'wait_min', name: 'wait_min' },
-        { checkboxId: 'extra_extrude_checkbox', inputId: 'extra_extrude', name: 'extra_extrude' },
-        { checkboxId: 'test_print_pause_checkbox', inputId: null, name: 'test_print_pause', isBoolean: true }
-    ];
-
-    checkboxConfigs.forEach(config => {
-        const checkbox = document.getElementById(config.checkboxId);
-
-        if (config.isBoolean) {
-            // Boolean checkbox - send "true" if checked
-            if (checkbox && checkbox.checked) {
-                formData.append(config.name, 'true');
-            }
-        } else {
-            // Regular checkbox with associated input
-            const input = document.getElementById(config.inputId);
-            if (checkbox && checkbox.checked && input) {
-                formData.append(config.name, input.value);
-            }
+    OPTIONAL_PARAMETERS.forEach(({ checkboxId, inputId, name }) => {
+        const checkbox = document.getElementById(checkboxId);
+        const input = document.getElementById(inputId);
+        if (checkbox && checkbox.checked && input) {
+            formData.append(name, input.value);
         }
     });
+
+    const testPrintPause = document.getElementById('test_print_pause_checkbox');
+    if (testPrintPause && testPrintPause.checked) {
+        formData.append('test_print_pause', 'true');
+    }
 
     // Get current language from HTML lang attribute (set by server based on Accept-Language or URL param)
     const currentLang = document.documentElement.lang || 'en';

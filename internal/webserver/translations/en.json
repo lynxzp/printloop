@@ -11,7 +11,7 @@
   "edit_automation_script": "Edit automation script for advanced users",
   "hide_automation_script": "Hide automation script",
   "additional_settings": "Additional Settings",
-  "iteration_number": "Number of cycles:",
+  "iteration_number": "Repeat:",
   "cycles": "cycles",
   "wait_bed_cooldown": "Bed cooldown temperature:",
   "additional_wait_time": "Extra wait after cooldown:",
